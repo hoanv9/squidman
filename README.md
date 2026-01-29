@@ -32,7 +32,7 @@ sudo useradd -g squid-man -m -s /sbin/nologin squid-man
 Download code from your repository (replace URL with your actual repo):
 ```bash
 cd /opt
-sudo git clone https://github.com/YOUR_USERNAME/squid-manager.git
+sudo git clone https://github.com/hoanv9/squid-manager.git
 # Or if you already have it, just update:
 # cd squid-manager && git pull
 cd squid-manager
