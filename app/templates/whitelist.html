@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% from "components/modal.html" import modal %}
+{% from "components/ui_macros.html" import pagination %}
+
+{% block title %}{{ config.WEBSITE_NAME }} - Global Whitelist{% endblock %}
+
+{% block content %}
+<div x-data="whitelistManager" x-init="initData()">
+    <!-- Header & Actions -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800">Global Whitelist</h2>
+            <p class="text-sm text-slate-500 mt-1">Manage global allowed domains and IPs.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button @click="openModal('add')" class="btn-primary">
+                <i class="fas fa-plus mr-2"></i> Add Item
+            </button>
+            <a :href="getExportUrl()" class="btn-secondary">
+                <i class="fas fa-download mr-2"></i> Export
+            </a>
+            <button @click="openImportModal()" class="btn-secondary">
+                <i class="fas fa-upload mr-2"></i> Import
+            </button>
+            <button @click="reloadList" class="btn-secondary">
+                <i class="fas fa-sync-alt mr-2"></i> Reload
+            </button>
+            <button x-show="selectedCount > 0" x-transition @click="openBulkDeleteModal"
+                class="btn-danger ml-auto md:ml-0">
+                <i class="fas fa-trash-alt mr-2"></i> Delete Selected (<span x-text="selectedCount"></span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <button @click="switchTab('domains')"
+            :class="currentTab === 'domains' ? 'border-brand-500 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+            Global Domains
+        </button>
+        <button @click="switchTab('ips')"
+            :class="currentTab === 'ips' ? 'border-brand-500 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+            Global IPs
+        </button>
+        <button @click="switchTab('templates')"
+            :class="currentTab === 'templates' ? 'border-brand-500 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+            Domain Templates
+        </button>
+    </nav>
+    <div class="h-px bg-slate-200 mb-6"></div>
+
+    <!-- Filters -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+            <input type="text" x-model="searchQuery" placeholder="Filter by name or description..."
+                class="form-input focus:ring-brand-100 focus:border-brand-500" autocomplete="off">
+        </div>
+        <div class="flex justify-end items-center space-x-2">
+            <span class="text-sm text-slate-500">Rows:</span>
+            <select x-model="limit" @change="updatePagination"
+                class="form-select w-20 focus:ring-brand-100 focus:border-brand-500">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- DOMAINS TABLE -->
+    <div x-show="currentTab === 'domains'" x-cloak
+        class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <form id="delete-domains-form" action="{{ url_for('whitelist.delete_bulk_domains') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="overflow-x-auto min-h-[400px]">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th scope="col" class="th-base w-10">
+                                <input type="checkbox" @change="toggleSelectAll" x-ref="selectAllDomains"
+                                    class="form-checkbox">
+                            </th>
+                            <th class="th-base">Domain</th>
+                            <th class="th-base">Description</th>
+                            <th class="th-base">Modified</th>
+                            <th class="th-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        <template x-for="item in paginatedDomains" :key="'domain-'+item.id">
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input type="checkbox" name="item_ids" :value="item.id"
+                                        class="domain-checkbox form-checkbox" @change="updateSelectedCount">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-slate-700"
+                                    x-text="item.domain">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"
+                                    x-text="item.description || '-'"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-400"
+                                    x-text="item.date_modified">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                    <button type="button" @click="openModal('edit', item)" class="btn-icon-brand"
+                                        title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button type="button" @click="openSingleDelete(item.id, 'domain')"
+                                        class="btn-icon-red" title="Delete"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="paginatedDomains.length === 0">
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500 italic">No domains found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {{ pagination(page_var='currentPage', total_var='totalPages', prev_func='prevPage()',
+            next_func='nextPage()',
+            start_var='(currentPage - 1) * limit', end_var='currentPage * limit', total_items_var='totalItems') }}
+        </form>
+    </div>
+
+    <!-- IPS TABLE -->
+    <div x-show="currentTab === 'ips'" x-cloak
+        class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <form id="delete-ips-form" action="{{ url_for('whitelist.delete_bulk_ips') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="overflow-x-auto min-h-[400px]">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th scope="col" class="th-base w-10">
+                                <input type="checkbox" @change="toggleSelectAll" x-ref="selectAllIps"
+                                    class="form-checkbox">
+                            </th>
+                            <th class="th-base">IP Address</th>
+                            <th class="th-base">Description</th>
+                            <th class="th-base">Modified</th>
+                            <th class="th-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        <template x-for="item in paginatedIps" :key="'ip-'+item.id">
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input type="checkbox" name="item_ids" :value="item.id"
+                                        class="ip-checkbox form-checkbox" @change="updateSelectedCount">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-slate-700"
+                                    x-text="item.ip_address"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"
+                                    x-text="item.description || '-'"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-400"
+                                    x-text="item.date_modified">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                    <button type="button" @click="openModal('edit', item)" class="btn-icon-brand"
+                                        title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button type="button" @click="openSingleDelete(item.id, 'ip')" class="btn-icon-red"
+                                        title="Delete"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="paginatedIps.length === 0">
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500 italic">No IPs found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {{ pagination(page_var='currentPage', total_var='totalPages', prev_func='prevPage()',
+            next_func='nextPage()',
+            start_var='(currentPage - 1) * limit', end_var='currentPage * limit', total_items_var='totalItems') }}
+        </form>
+    </div>
+
+    <!-- TEMPLATES TABLE -->
+    <div x-show="currentTab === 'templates'" x-cloak
+        class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <form id="delete-templates-form" action="{{ url_for('whitelist.delete_bulk_templates') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="overflow-x-auto min-h-[400px]">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th scope="col" class="th-base w-10">
+                                <input type="checkbox" @change="toggleSelectAll" x-ref="selectAllTemplates"
+                                    class="form-checkbox">
+                            </th>
+                            <th class="th-base">Template Name</th>
+                            <th class="th-base">Domains</th>
+                            <th class="th-base">Description</th>
+                            <th class="th-base">Modified</th>
+                            <th class="th-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        <template x-for="item in paginatedTemplates" :key="'template-'+item.id">
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input type="checkbox" name="item_ids" :value="item.id"
+                                        class="template-checkbox form-checkbox" @change="updateSelectedCount">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-sm text-slate-700"
+                                    x-text="item.name"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-500">
+                                    <div class="flex flex-col items-start gap-1">
+                                        <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-mono"
+                                            x-text="item.domains ? item.domains.length : 0"></span>
+
+                                        <template
+                                            x-if="searchQuery && item.domains && item.domains.some(d => d.toLowerCase().includes(searchQuery.toLowerCase().trim()))">
+                                            <div
+                                                class="text-[10px] text-brand-600 font-mono bg-brand-50 px-1.5 py-0.5 rounded border border-brand-100">
+                                                <i class="fas fa-filter mr-1 text-[9px]"></i>
+                                                <span
+                                                    x-text="item.domains.find(d => d.toLowerCase().includes(searchQuery.toLowerCase().trim()))"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"
+                                    x-text="item.description || '-'"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-400"
+                                    x-text="item.date_modified">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                    <button type="button" @click="openModal('edit', item)" class="btn-icon-brand"
+                                        title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button type="button" @click="openSingleDelete(item.id, 'template')"
+                                        class="btn-icon-red" title="Delete"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="paginatedTemplates.length === 0">
+                            <td colspan="6" class="px-6 py-8 text-center text-slate-500 italic">No templates found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {{ pagination(page_var='currentPage', total_var='totalPages', prev_func='prevPage()',
+            next_func='nextPage()',
+            start_var='(currentPage - 1) * limit', end_var='currentPage * limit', total_items_var='totalItems') }}
+        </form>
+    </div>
+
+    <!-- DOMAIN/IP MODAL -->
+    {% call modal('domainIpModal', '<span x-text="modalTitle"></span>', 'isModalOpen') %}
+    <form :action="formAction" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- If Add/Edit Domain/IP -->
+        <template x-if="currentTab !== 'templates'">
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">
+                        <span x-text="currentTab === 'domains' ? 'Domain' : 'IP Address'"></span>
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" :name="currentTab === 'domains' ? 'domain' : 'ip_address'"
+                        x-model="formData.value" required class="form-input focus:ring-brand-100"
+                        :placeholder="currentTab === 'domains' ? 'example.com' : '192.168.1.1'" autocomplete="off">
+                    <p class="text-xs text-slate-500 mt-1" x-show="currentTab === 'domains'">Use .example.com for
+                        wildcards</p>
+                </div>
+                <div>
+                    <label class="form-label">Description</label>
+                    <input type="text" name="description" x-model="formData.description"
+                        class="form-input focus:ring-brand-100" placeholder="Optional context..." autocomplete="off">
+                </div>
+            </div>
+        </template>
+
+        <!-- If Add/Edit Template -->
+        <template x-if="currentTab === 'templates'">
+            <div class="space-y-4">
+                <div>
+                    <label class="form-label">Template Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" x-model="formData.templateName" required
+                        class="form-input focus:ring-brand-100 placeholder:text-slate-300"
+                        placeholder="e.g. Social Media Block" autocomplete="off">
+                </div>
+                <div>
+                    <label class="form-label">Domains List <span class="text-red-500">*</span></label>
+                    <textarea name="domains" x-model="formData.templateDomains" rows="6" required
+                        class="form-textarea w-full font-mono text-xs focus:ring-brand-100"
+                        placeholder="facebook.com&#10;twitter.com&#10;.instagram.com"></textarea>
+                    <p class="text-[10px] text-slate-500 mt-1">One domain per line. Wildcards implied (e.g.
+                        .google.com). System will automatically format entries.</p>
+                </div>
+                <div>
+                    <label class="form-label">Description</label>
+                    <input type="text" name="description" x-model="formData.description"
+                        class="form-input focus:ring-brand-100" placeholder="Optional context..." autocomplete="off">
+                </div>
+            </div>
+        </template>
+
+        <div class="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-2">
+            <button type="button" @click="closeModal" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save mr-2"></i> Save
+            </button>
+        </div>
+    </form>
+    {% endcall %}
+
+    <!-- DELETE MODAL -->
+    {% call modal('deleteModal', 'Confirm Delete', 'isDeleteModalOpen') %}
+    <div class="flex flex-col items-center text-center p-4">
+        <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+            <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-slate-900">Are you sure?</h3>
+
+        <template x-if="!isBulk">
+            <p class="text-sm text-slate-500 mt-2">
+                This action cannot be undone. The item will be removed from the whitelist.
+            </p>
+        </template>
+
+        <template x-if="isBulk">
+            <div class="w-full">
+                <p class="text-sm text-slate-500 mt-2 mb-4">
+                    You are about to delete <span x-text="selectedCount" class="font-bold text-slate-800"></span> items.
+                </p>
+                <div class="max-w-xs mx-auto text-left">
+                    <label class="text-xs font-semibold text-slate-600 mb-1 block">Type "confirm" to proceed:</label>
+                    <input type="text" x-model="confirmText"
+                        class="form-input text-center font-mono placeholder:text-slate-300" placeholder="confirm"
+                        autocomplete="off">
+                </div>
+            </div>
+        </template>
+
+    </div>
+    <div class="mt-6 flex justify-center gap-3">
+        <button type="button" @click="closeDeleteModal" class="btn-secondary">Cancel</button>
+
+        <!-- Single Delete Link -->
+        <a x-show="!isBulk" :href="getDeleteUrl()" class="btn-danger justify-center px-6">Delete</a>
+
+        <!-- Bulk Delete Button -->
+        <button x-show="isBulk" type="button" @click="submitBulkDelete" :disabled="confirmText !== 'confirm'"
+            :class="{'opacity-50 cursor-not-allowed': confirmText !== 'confirm'}"
+            class="btn-danger justify-center px-6">
+            Delete Selected
+        </button>
+    </div>
+    {% endcall %}
+
+    <!-- IMPORT MODAL -->
+    {% call modal('importModal', '<span
+        x-text="\'Import \' + (currentTab === \'templates\' ? \'Templates\' : (currentTab === \'domains\' ? \'Domains\' : \'IPs\'))"></span>',
+    'isImportModalOpen') %}
+    <form :action="getImportAction()" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="space-y-4">
+            <div>
+                <label class="form-label"
+                    x-text="currentTab === 'templates' ? 'Select JSON File' : 'Select Text File (.txt)'"></label>
+                <input type="file" name="file" :accept="currentTab === 'templates' ? '.json' : '.txt'" required
+                    class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                <p x-show="currentTab !== 'templates'" class="text-xs text-slate-500 mt-1">Format:
+                    <code>value #description</code> (one per line)
+                </p>
+            </div>
+            <div class="flex items-center" x-show="currentTab === 'templates'">
+                <input type="checkbox" name="overwrite" id="overwrite" class="form-checkbox">
+                <label for="overwrite" class="ml-2 text-sm text-slate-600">Overwrite existing templates with same
+                    name</label>
+            </div>
+        </div>
+        <div class="pt-3 mt-4 border-t border-slate-100 flex justify-end gap-2">
+            <button type="button" @click="isImportModalOpen = false" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-upload mr-2"></i> Import
+            </button>
+        </div>
+    </form>
+    {% endcall %}
+
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/alpine/whitelist_manager.js') }}?v=6"></script>
+<!-- Inject Data from Server -->
+<script id="whitelist-data" type="application/json">
+    {
+        "domains": {{ domains|tojson|safe }},
+        "ips": {{ ips|tojson|safe }},
+        "templates": {{ templates|tojson|safe }}
+    }
+</script>
+{% endblock %}

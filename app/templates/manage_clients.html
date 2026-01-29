@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% from "components/ui_macros.html" import badge, pagination %}
+{% from "components/modal.html" import modal %}
+
+{% block title %}{{ config.WEBSITE_NAME }} - Manage Clients{% endblock %}
+
+{% block content %}
+<div x-data="clientManager()">
+    <!-- Header & Actions -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800">Manage Clients</h2>
+            <p class="text-sm text-slate-500 mt-1">View and manage authorized clients.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button @click="openModal('add')" class="btn-primary">
+                <i class="fas fa-plus mr-2"></i> Add Client
+            </button>
+            <button @click="openSearchModal" class="btn-secondary">
+                <i class="fas fa-search mr-2"></i> Find
+            </button>
+            <button @click="reloadList" class="btn-secondary">
+                <i class="fas fa-sync-alt mr-2"></i> Reload
+            </button>
+            <button x-show="selectedCount > 0" x-transition @click="openBulkDeleteModal"
+                class="btn-danger ml-auto md:ml-0">
+                <i class="fas fa-trash-alt mr-2"></i> Delete Selected (<span x-text="selectedCount"></span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <button @click="switchTab('clients')"
+            :class="currentTab === 'clients' ? 'border-brand-500 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+            class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+            Authorized Clients
+        </button>
+    </nav>
+    <div class="h-px bg-slate-200 mb-6"></div>
+
+    <div x-show="currentTab === 'clients'" x-cloak>
+        <!-- Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+                <input type="text" x-model="ipFilter" @input="filterClients" placeholder="Filter by IP..."
+                    class="form-input focus:ring-brand-100 focus:border-brand-500" autocomplete="off">
+            </div>
+            <div class="flex justify-end items-center space-x-2">
+                <span class="text-sm text-slate-500">Rows:</span>
+                <select x-model="limit" @change="updatePagination"
+                    class="form-select w-20 focus:ring-brand-100 focus:border-brand-500">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Clients Table -->
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+            <form id="delete-form" method="POST" action="{{ url_for('manage_clients.delete_clients') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="overflow-x-auto min-h-[400px]">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="th-base w-10">
+                                    <input type="checkbox" @change="toggleSelectAll" x-ref="selectAll"
+                                        class="form-checkbox">
+                                </th>
+                                <th class="th-base th-sortable" @click="sortBy('ip')">
+                                    IP Client
+                                    <i class="fas ml-1"
+                                        :class="sortCol === 'ip' ? (sortAsc ? 'fa-sort-up text-brand-600' : 'fa-sort-down text-brand-600') : 'fa-sort text-slate-200'"></i>
+                                </th>
+                                <th class="th-base th-sortable" @click="sortBy('added')">
+                                    Date Added
+                                    <i class="fas ml-1"
+                                        :class="sortCol === 'added' ? (sortAsc ? 'fa-sort-up text-brand-600' : 'fa-sort-down text-brand-600') : 'fa-sort text-slate-200'"></i>
+                                </th>
+                                <th class="th-base th-sortable" @click="sortBy('expiration')">
+                                    Exp Date
+                                    <i class="fas ml-1"
+                                        :class="sortCol === 'expiration' ? (sortAsc ? 'fa-sort-up text-brand-600' : 'fa-sort-down text-brand-600') : 'fa-sort text-slate-200'"></i>
+                                </th>
+                                <th class="th-base text-left">Domain</th>
+                                <th class="th-base th-sortable" @click="sortBy('days')">
+                                    Days Left
+                                    <i class="fas ml-1"
+                                        :class="sortCol === 'days' ? (sortAsc ? 'fa-sort-up text-brand-600' : 'fa-sort-down text-brand-600') : 'fa-sort text-slate-200'"></i>
+                                </th>
+                                <th class="th-base">Ticket</th>
+                                <th class="th-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200" id="client-rows">
+                            {% for client in client_data %}
+                            <tr class="hover:bg-slate-50 transition-colors client-row" data-id="{{ client.id }}"
+                                data-ip="{{ client.ip_address }}" data-dns="{{ client.dns_hostname or '' }}"
+                                data-added="{{ client.date_added }}" data-added-iso="{{ client.date_added_iso }}"
+                                data-expiration="{{ client.expiration_date_iso }}"
+                                data-days="{{ client.days_remaining }}" data-ticket="{{ client.ticket_id or '' }}"
+                                data-notes="{{ client.notes or '' }}" data-urls='{{ client.allowed_domains|tojson }}'>
+
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <input type="checkbox" name="selected_clients" value="{{ client.id }}"
+                                        class="client-checkbox form-checkbox" @change="updateSelectedCount">
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-slate-900 font-mono flex items-center">
+                                        {{ client.ip_address }}
+                                        {% if client.allowed_domains|length == 1 and client.allowed_domains[0] == 'ANY'
+                                        %}
+                                        <span
+                                            class="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-800 tracking-wider uppercase border border-yellow-200">VIP</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-xs text-slate-500">{{ client.dns_hostname if client.dns_hostname
+                                        else
+                                        'N/A' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ client.date_added }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ client.expiration_date
+                                    }}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-500 font-mono">
+                                    <div class="flex items-center gap-2">
+                                        {% if client.allowed_domains %}
+                                        <div class="truncate max-w-[150px]">{{ client.allowed_domains[0] }}</div>
+                                        {% if client.allowed_domains|length > 1 %}
+                                        <span class="text-xs text-slate-400 font-medium whitespace-nowrap">+{{
+                                            client.allowed_domains|length - 1 }} more</span>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="text-slate-400 italic">No domains</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if client.days_remaining < 0 %} {{ badge('Expired', 'red' ) }} {% else %} <span
+                                        class="text-sm text-slate-700 font-medium">{{ client.days_remaining }}</span>
+                                        {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 max-w-[150px] truncate"
+                                    title="{{ client.ticket_id }}">{{ client.ticket_id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                    <button type="button" @click="openModal('edit', $el.closest('tr'))"
+                                        class="btn-icon-brand" title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button type="button" @click="openModal('clone', $el.closest('tr'))"
+                                        class="btn-icon-teal" title="Clone"><i class="fas fa-clone"></i></button>
+                                    <button type="button" @click="openDeleteModal({{ client.id }})" class="btn-icon-red"
+                                        title="Delete"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {{ pagination(start_var='start', end_var='end', total_items_var='totalRows') }}
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- MAIN CLIENT MODAL -->
+    {% call modal('clientModal', '<span x-text="modalTitle"></span>', 'isClientModalOpen', width='max-w-3xl') %}
+    <form :action="formAction" method="POST" @submit.prevent="submitClientForm" id="clientForm"
+        class="flex flex-col h-full">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="space-y-4">
+
+            <!-- Group: Identity -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- IP Address -->
+                <div class="w-full relative">
+                    <label class="form-label">IP Address / CIDR <span class="text-red-500">*</span></label>
+                    <input type="text" name="ip_address" x-model="formData.ip" :readonly="modalMode === 'edit'" required
+                        placeholder="192.168.1.10" class="form-input mt-1 focus:ring-brand-100"
+                        :class="{'bg-slate-50 text-slate-500 cursor-not-allowed': modalMode === 'edit'}"
+                        autocomplete="off">
+                </div>
+
+                <!-- DNS Hostname -->
+                <div class="w-full">
+                    <label class="form-label">DNS Hostname</label>
+                    <input type="text" name="dns_hostname" x-model="formData.dns" placeholder="host.example.com"
+                        class="form-input mt-1 focus:ring-brand-100" autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Group: Access Control -->
+            <div class="bg-slate-50 p-4 rounded-md border border-slate-300 shadow-inner">
+                <div class="flex justify-between items-center mb-3">
+                    <label class="form-label mb-0">Allowed Domains</label>
+
+                    <div class="flex items-center gap-4">
+                        <!-- VIP Switch -->
+                        <div class="flex items-center">
+                            <button type="button"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-slate-300 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                                :class="isVip ? 'bg-brand-600 border-transparent' : 'bg-slate-200'" role="switch"
+                                aria-checked="false" @click="isVip = !isVip">
+                                <span class="sr-only">Use setting</span>
+                                <span aria-hidden="true"
+                                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                    :class="isVip ? 'translate-x-5' : 'translate-x-0'">
+                                </span>
+                            </button>
+                            <span class="ml-3 text-sm font-medium"
+                                :class="isVip ? 'text-brand-700' : 'text-slate-600'">VIP Mode</span>
+                        </div>
+
+                        <div class="h-4 w-px bg-slate-300"></div>
+
+                        <button type="button" @click="openTemplateModal"
+                            class="btn-secondary py-1 px-3 text-xs bg-white">
+                            <i class="fas fa-book-open mr-1.5 text-brand-500"></i> Use Template
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative w-full">
+                    <textarea name="allowed_domains" rows="8" x-model="formData.domains" :readonly="isVip"
+                        class="form-textarea font-mono text-sm leading-relaxed w-full min-h-[150px] focus:ring-brand-100"
+                        :class="{'opacity-50 cursor-not-allowed bg-slate-100': isVip}"
+                        placeholder=".google.com&#10;.microsoft.com&#10;example.org"></textarea>
+
+                    <div x-show="isVip" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span
+                            class="bg-brand-100 text-brand-700 px-4 py-2 rounded-full font-bold shadow-sm opacity-90 backdrop-blur-sm border border-brand-200">
+                            <i class="fas fa-check-circle mr-2"></i> All Traffic Allowed
+                        </span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2 text-right">One domain per line. Wildcards implied for
+                    subdomains.</p>
+            </div>
+
+            <!-- Group: Metadata -->
+            <div>
+                <!-- Layout: Expiration (Left) --- Ticket ID (Right) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <div class="w-full">
+                        <label class="form-label space-x-1">
+                            <span>Expiration Date</span>
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" name="expiration_date" x-model="formData.expiration" required
+                            class="form-input mt-1 w-full bg-white focus:ring-brand-100">
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <!-- Quick Date Chips -->
+                            <button type="button" @click="addDays(7)" class="chip-date">+7 Days</button>
+                            <button type="button" @click="addDays(90)" class="chip-date">+3 Mos</button>
+                            <button type="button" @click="addDays(365)" class="chip-date">+1 Year</button>
+                            <button type="button" @click="formData.expiration = '2099-12-31'"
+                                class="chip-date">Lifetime</button>
+                        </div>
+                    </div>
+
+                    <div class="w-full">
+                        <label class="form-label">Ticket ID</label>
+                        <input type="text" name="ticket_id" x-model="formData.ticket" placeholder="e.g. JIRA-1234"
+                            class="form-input mt-1 w-full focus:ring-brand-100" autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- Layout: Notes (Full Width at Bottom) -->
+                <div class="w-full">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" x-model="formData.notes"
+                        placeholder="Internal remarks regarding this client..."
+                        class="form-input mt-1 w-full focus:ring-brand-100" autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-6 mt-8 border-t border-slate-100 flex justify-end gap-3">
+            <button type="button" @click="closeClientModal" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">
+                <i class="fas fa-save mr-2"></i> Save Changes
+            </button>
+        </div>
+    </form>
+    {% endcall %}
+
+    <!-- Template Modal -->
+    {% call modal('templateModal', 'Select Domain Templates', 'isTemplateModalOpen', width='max-w-4xl') %}
+    <div class="flex flex-col md:flex-row gap-4 h-[55vh]">
+        <!-- Left: Selection List -->
+        <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar border-r border-slate-100">
+            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Available Groups
+            </h4>
+            <div class="space-y-1">
+                <template x-for="(urls, group) in urlGroups" :key="group">
+                    <label class="flex items-center p-1.5 px-3 rounded-md cursor-pointer border transition-all group"
+                        :class="selectedTemplates.includes(group) ? 'bg-brand-50 border-brand-200 shadow-sm' : 'hover:bg-slate-50 border-slate-100'">
+                        <div class="flex items-center h-4">
+                            <input type="checkbox" :value="group" x-model="selectedTemplates"
+                                class="form-checkbox w-3.5 h-3.5">
+                        </div>
+                        <div class="ml-2.5 text-xs flex-1">
+                            <span class="font-semibold"
+                                :class="selectedTemplates.includes(group) ? 'text-brand-700' : 'text-slate-700'"
+                                x-text="group"></span>
+                            <span class="text-[9px] text-slate-400 ml-2" x-text="'(' + urls.length + ')'"></span>
+                        </div>
+                    </label>
+                </template>
+            </div>
+        </div>
+
+        <!-- Right: Merged Preview -->
+        <div class="flex-1 flex flex-col overflow-hidden bg-slate-50 rounded-lg border border-slate-200">
+            <div class="p-2 px-3 border-b border-slate-200 bg-white flex justify-between items-center">
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Merged Preview</h4>
+                <span class="text-[9px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded"
+                    x-text="mergedPreview.length"></span>
+            </div>
+
+            <div
+                class="flex-1 p-2 px-3 overflow-y-auto custom-scrollbar font-mono text-[10px] text-slate-600 leading-tight">
+                <template x-if="mergedPreview.length === 0">
+                    <div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60 italic">
+                        <i class="fas fa-layer-group text-2xl mb-2"></i>
+                        <p class="text-[10px]">Select groups</p>
+                    </div>
+                </template>
+                <template x-if="mergedPreview.length > 0">
+                    <div class="space-y-0.5">
+                        <template x-for="url in mergedPreview" :key="url">
+                            <div
+                                class="flex items-center gap-1.5 py-0.5 border-b border-slate-100/50 last:border-0 hover:text-brand-600 transition-colors">
+                                <i class="fas fa-globe text-[8px] text-slate-300"></i>
+                                <span x-text="url"></span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+    <div class="pt-3 mt-4 border-t border-slate-100 flex justify-end gap-2">
+        <button type="button" @click="isTemplateModalOpen = false"
+            class="btn-secondary py-1.5 px-4 text-xs">Cancel</button>
+        <button type="button" @click="applyTemplates" class="btn-primary py-1.5 px-4 text-xs"
+            :disabled="mergedPreview.length === 0"
+            :class="{'opacity-50 cursor-not-allowed': mergedPreview.length === 0}">
+            <i class="fas fa-check-double mr-1.5"></i> Apply (<span x-text="mergedPreview.length"></span>)
+        </button>
+    </div>
+    {% endcall %}
+
+    <!-- Delete Modal -->
+    {% call modal('deleteModal', 'Delete Client', 'isDeleteModalOpen') %}
+    <div class="flex flex-col items-center text-center p-4">
+        <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-slate-900">Are you sure?</h3>
+        <p class="text-sm text-slate-500 mt-2">
+            This action will permanently delete the client rules. This cannot be undone.
+        </p>
+    </div>
+    <div class="mt-6 flex justify-center gap-3">
+        <button type="button" @click="isDeleteModalOpen = false" class="btn-secondary">Cancel</button>
+        <a :href="'/clients/delete/' + deleteId" class="btn-danger justify-center px-6">Delete</a>
+    </div>
+    {% endcall %}
+
+    <!-- Search Modal -->
+    {% call modal('searchModal', 'Find Client', 'isSearchModalOpen') %}
+    <div class="space-y-5">
+        <div>
+            <label class="form-label">Search Query</label>
+            <input type="text" x-model="searchContent" @keyup.enter="performSearch"
+                class="form-input mt-1 focus:ring-brand-100" placeholder="Type to search..." autofocus
+                autocomplete="off">
+        </div>
+        <div>
+            <label class="form-label">Search Field</label>
+            <select x-model="searchField" class="form-select mt-1 focus:ring-brand-100">
+                <option value="ip">IP Address</option>
+                <option value="ticket">Ticket ID</option>
+                <option value="dns">DNS Hostname</option>
+            </select>
+        </div>
+    </div>
+    <div class="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-2">
+        <button type="button" @click="closeSearchModal" class="btn-secondary">Cancel</button>
+        <button type="button" @click="performSearch" class="btn-primary">Search</button>
+    </div>
+    {% endcall %}
+
+    <!-- Bulk Delete Modal -->
+    {% call modal('bulkDeleteModal', 'Delete Selected', 'isBulkDeleteModalOpen') %}
+    <div class="flex flex-col items-center text-center p-4">
+        <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+            <i class="fas fa-trash-alt text-red-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-slate-900">Confirm Deletion</h3>
+        <p class="text-sm text-slate-500 mt-2 mb-4">
+            You are about to delete <span x-text="selectedCount" class="font-bold text-slate-800"></span> clients.
+        </p>
+
+        <div class="max-w-xs mx-auto text-left w-full">
+            <label class="text-xs font-semibold text-slate-600 mb-1 block">Type "confirm" to proceed:</label>
+            <input type="text" x-model="confirmText" class="form-input text-center font-mono placeholder:text-slate-300"
+                placeholder="confirm" autocomplete="off">
+        </div>
+    </div>
+    <div class="mt-6 flex justify-center gap-3">
+        <button type="button" @click="closeBulkDeleteModal" class="btn-secondary">Cancel</button>
+        <button type="button" @click="confirmBulkDelete" :disabled="confirmText !== 'confirm'"
+            :class="{'opacity-50 cursor-not-allowed': confirmText !== 'confirm'}"
+            class="btn-danger justify-center px-6">Delete All</button>
+    </div>
+    {% endcall %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/alpine/client_manager.js') }}"></script>
+{% endblock %}

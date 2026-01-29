@@ -1,0 +1,157 @@
+{
+  "redhat-repo": [
+    "cdn.redhat.com",
+    "subscription.rhn.redhat.com",
+    "content-xmlrpc.rhn.redhat.com"
+  ],
+  "oracle-linux-repo": [
+    "yum.oracle.com",
+    "public-yum.oracle.com",
+    "objectstorage.ap-singapore-1.oraclecloud.com"
+  ],
+  "ubuntu-repo": [
+    "archive.ubuntu.com",
+    "security.ubuntu.com",
+    "changelogs.ubuntu.com",
+    "ppa.launchpad.net"
+  ],
+  "debian-repo": [
+    "deb.debian.org",
+    "security.debian.org"
+  ],
+  "anaconda-conda": [
+    "repo.anaconda.com",
+    "conda.anaconda.org"
+  ],
+  "artifactory": [
+    "repo.jfrog.io"
+  ],
+  "docker": [
+    "download.docker.com",
+    "registry-1.docker.io",
+    "auth.docker.io",
+    "production.cloudflare.docker.com"
+  ],
+  "kubernetes-helm": [
+    "get.helm.sh",
+    "charts.helm.sh"
+  ],
+  "maven-central": [
+    "repo.maven.apache.org"
+  ],
+  "nodejs": [
+    "nodejs.org",
+    "registry.npmjs.org"
+  ],
+  "python": [
+    "pypi.org",
+    "files.pythonhosted.org"
+  ],
+  "nuget": [
+    "api.nuget.org"
+  ],
+  "hashicorp": [
+    "releases.hashicorp.com",
+    "registry.terraform.io"
+  ],
+  "github": [
+    "github.com",
+    "api.github.com",
+    "raw.githubusercontent.com",
+    "objects.githubusercontent.com"
+  ],
+  "gitlab": [
+    "gitlab.com",
+    "registry.gitlab.com"
+  ],
+  "bitbucket": [
+    "bitbucket.org",
+    "api.bitbucket.org"
+  ],
+  "circleci": [
+    "circleci.com"
+  ],
+  "travis-ci": [
+    "api.travis-ci.com"
+  ],
+  "jenkins": [
+    "updates.jenkins.io",
+    "pkg.jenkins.io"
+  ],
+  "grafana": [
+    "grafana.com",
+    "stats.grafana.org"
+  ],
+  "datadog": [
+    "app.datadoghq.com",
+    "agent-http-intake.logs.datadoghq.com"
+  ],
+  "elastic": [
+    "artifacts.elastic.co"
+  ],
+  "hugging-face": [
+    "huggingface.co",
+    "cdn-lfs.huggingface.co"
+  ],
+  "nvidia": [
+    "download.nvidia.com",
+    "nvcr.io"
+  ],
+  "aws-cloudwatch-sg": [
+    "monitoring.ap-southeast-1.amazonaws.com"
+  ],
+  "aws-s3-sg": [
+    "s3.ap-southeast-1.amazonaws.com"
+  ],
+  "google-cloud": [
+    "storage.googleapis.com",
+    "oauth2.googleapis.com"
+  ],
+  "oci-s3-sg": [
+    "objectstorage.ap-singapore-1.oraclecloud.com"
+  ],
+  "openai": [
+    "api.openai.com"
+  ],
+  "telegram": [
+    "api.telegram.org"
+  ],
+  "slack": [
+    "api.slack.com",
+    "slack.com"
+  ],
+  "discord": [
+    "gateway.discord.gg",
+    "cdn.discordapp.com"
+  ],
+  "zalo-api": [
+    "oauth.zaloapp.com",
+    "openapi.zalo.me"
+  ],
+  "cic-api": [
+    "api.cic.gov.vn",
+    "uat.cic.gov.vn"
+  ],
+  "jira-fecredit": [
+    "fecredit.atlassian.net"
+  ],
+  "microsoft-windows-update": [
+    "windowsupdate.microsoft.com",
+    "download.windowsupdate.com",
+    "update.microsoft.com"
+  ],
+  "microsoft-m365": [
+    "login.microsoftonline.com",
+    "aadcdn.msftauth.net",
+    "outlook.office.com",
+    "outlook.office365.com",
+    "autodiscover.outlook.com",
+    "graph.microsoft.com"
+  ],
+  "symantec-live-update": [
+    "liveupdate.symantec.com",
+    "liveupdate.symantecliveupdate.com",
+    "definitions.symantec.com",
+    "definitions.norton.com"
+  ]
+}

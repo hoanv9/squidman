@@ -1,0 +1,52 @@
+<aside
+    class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transition-transform transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-auto flex flex-col shadow-xl"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+
+    <!-- Logo -->
+    <!-- Logo -->
+    <div class="flex flex-col items-center justify-center h-auto bg-slate-950 shadow-md py-8">
+        <img src="{{ url_for('static', filename='favicon.png') }}" alt="Logo"
+            class="h-16 w-16 mb-3 rounded-xl shadow-lg bg-white p-1">
+        <span class="text-lg font-bold tracking-wider uppercase text-center">{{ config.WEBSITE_NAME }}</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-2 py-4 space-y-2 overflow-y-auto">
+        {% set menu_items = [
+        ('dashboard.dashboard', 'tachometer-alt', 'Dashboard', 'dashboard'),
+        ('manage_clients.manage_clients', 'users', 'Clients Management', 'manage_clients'),
+        ('whitelist.manage_whitelist', 'globe', 'Global Whitelist', 'whitelist'),
+        ('apply_configuration.apply_configuration', 'cogs', 'Apply Config', 'apply_configuration'),
+        ('log.log', 'terminal', 'Access Logs', 'log')
+        ] %}
+
+        {% for endpoint, icon, label, tab_id in menu_items %}
+        <a href="{{ url_for(endpoint) }}"
+            class="flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors {{ 'bg-brand-600 text-white shadow-md' if active_tab == tab_id else 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+            <i
+                class="fas fa-{{ icon }} w-6 text-lg {{ 'text-white' if active_tab == tab_id else 'text-slate-500' }}"></i>
+            <span class="ml-3">{{ label }}</span>
+        </a>
+        {% endfor %}
+    </nav>
+
+    <!-- User / Logout -->
+    {% if current_user.is_authenticated %}
+    <div class="p-4 bg-slate-950 border-t border-slate-800">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div
+                    class="h-10 w-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold text-lg">
+                    {{ current_user.username[0] | upper }}
+                </div>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-medium text-white">{{ current_user.username }}</p>
+                <a href="{{ url_for('auth.logout') }}" class="text-xs font-medium text-red-400 hover:text-red-300">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</aside>

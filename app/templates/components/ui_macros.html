@@ -1,0 +1,120 @@
+{% macro modal(id, title, show_var, confirm_click=None, cancel_click=None, confirm_text="Confirm", cancel_text="Cancel",
+type='info') %}
+<div x-show="{{ show_var }}" x-cloak class="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title"
+    role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            @click="{{ cancel_click if cancel_click else show_var + ' = false' }}"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div
+            class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    {% if type == 'danger' %}
+                    <div
+                        class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-trash text-red-600"></i>
+                    </div>
+                    {% elif type == 'info' %}
+                    <div
+                        class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-info text-blue-600"></i>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title">{{ title }}</h3>
+                        <div class="mt-2">
+                            {{ caller() }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                {% if confirm_click %}
+                <button type="button" @click="{{ confirm_click }}"
+                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 {{ 'bg-red-600 hover:bg-red-700 focus:ring-red-500' if type == 'danger' else 'bg-brand-600 hover:bg-brand-700 focus:ring-brand-500' }} text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm">
+                    {{ confirm_text }}
+                </button>
+                {% endif %}
+                <button type="button" @click="{{ cancel_click if cancel_click else show_var + ' = false' }}"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-slate-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    {{ cancel_text }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro badge(text, color='blue') %}
+{% set colors = {
+'blue': 'bg-blue-100 text-blue-800 border-blue-200',
+'green': 'bg-green-100 text-green-800 border-green-200',
+'red': 'bg-red-100 text-red-800 border-red-200',
+'yellow': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+'gray': 'bg-slate-100 text-slate-800 border-slate-200',
+'brand': 'bg-brand-100 text-brand-800 border-brand-200',
+'teal': 'bg-teal-100 text-teal-800 border-teal-200'
+} %}
+<span
+    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border {{ colors[color] if color in colors else colors['blue'] }}">
+    {{ text }}
+</span>
+{% endmacro %}
+
+{% macro pagination(page_var='page', total_var='totalPages', prev_func='prevPage', next_func='nextPage', start_var=None,
+end_var=None, total_items_var=None) %}
+<div class="px-6 py-3 flex items-center justify-between border-t border-slate-200 bg-slate-50">
+    <!-- Mobile version -->
+    <div class="flex-1 flex justify-between sm:hidden">
+        <button type="button" @click="{{ prev_func }}" :disabled="{{ page_var }} === 1"
+            class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 transition-colors">
+            Previous
+        </button>
+        <button type="button" @click="{{ next_func }}" :disabled="{{ page_var }} === {{ total_var }}"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 transition-colors">
+            Next
+        </button>
+    </div>
+    <!-- Desktop version (Dashboard Style) -->
+    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+            <p class="text-sm text-slate-700">
+                {% if start_var and end_var and total_items_var %}
+                Showing <span class="font-medium" x-text="{{ total_items_var }} === 0 ? 0 : {{ start_var }} + 1"></span>
+                to <span class="font-medium" x-text="Math.min({{ end_var }}, {{ total_items_var }})"></span> of <span
+                    class="font-medium" x-text="{{ total_items_var }}"></span> results
+                {% else %}
+                Showing page <span class="font-medium" x-text="{{ page_var }}"></span> of <span class="font-medium"
+                    x-text="{{ total_var }}"></span>
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button type="button" @click="{{ prev_func }}" :disabled="{{ page_var }} === 1"
+                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition-colors">
+                    <span class="sr-only">Previous</span>
+                    <i class="fas fa-chevron-left h-5 w-5 p-1 flex items-center justify-center"></i>
+                </button>
+
+                <template x-for="p in {{ total_var }}" :key="p">
+                    <button type="button" x-show="Math.abs(p - {{ page_var }}) < 3 || p === 1 || p === {{ total_var }}"
+                        @click="{{ page_var }} = p; if(typeof updatePagination === 'function') updatePagination();"
+                        :class="p === {{ page_var }} ? 'z-10 bg-brand-50 border-brand-500 text-brand-600' : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'"
+                        class="relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors"
+                        x-text="p">
+                    </button>
+                </template>
+
+                <button type="button" @click="{{ next_func }}" :disabled="{{ page_var }} === {{ total_var }}"
+                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 transition-colors">
+                    <span class="sr-only">Next</span>
+                    <i class="fas fa-chevron-right h-5 w-5 p-1 flex items-center justify-center"></i>
+                </button>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endmacro %}

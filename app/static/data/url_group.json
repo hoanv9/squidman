@@ -1,0 +1,177 @@
+{
+    "Anaconda": [
+        ".anaconda.com",
+        ".conda.io"
+    ],
+    "Artifactory": [
+        ".jfrog.io"
+    ],
+    "AWS-CloudWatch-Singapore": [
+        ".monitoring.ap-southeast-1.amazonaws.com"
+    ],
+    "AWS-S3-Singapore": [
+        ".s3-ap-southeast-1.amazonaws.com",
+        ".s3.ap-southeast-1.amazonaws.com"
+    ],
+    "Azure-AD": [
+        ".aadcdn.msftauth.net",
+        ".graph.windows.net",
+        ".microsoftonline.com"
+    ],
+    "Bitbucket": [
+        ".bitbucket.org"
+    ],
+    "CircleCI": [
+        ".circleci.com"
+    ],
+    "Datadog": [
+        ".datadoghq.com"
+    ],
+    "Debian-repo": [
+        ".deb.debian.org",
+        ".ftp.debian.org",
+        ".security.debian.org"
+    ],
+    "Discord": [
+        ".discord.com",
+        ".discordapp.com"
+    ],
+    "Docker": [
+        ".docker.com",
+        ".docker.io"
+    ],
+    "Elastic": [
+        ".elastic.co"
+    ],
+    "Github": [
+        ".github.com",
+        ".github.io",
+        ".githubusercontent.com",
+        ".raw.githubusercontent.com"
+    ],
+    "GitLab": [
+        ".gitlab-static.net",
+        ".gitlab.com",
+        ".gitlab.io"
+    ],
+    "Google-Cloud": [
+        ".cloud.google.com",
+        ".gcr.io",
+        ".googleapis.com"
+    ],
+    "Grafana": [
+        ".grafana.com"
+    ],
+    "HashiCorp": [
+        ".hashicorp.com",
+        ".vaultproject.io"
+    ],
+    "Jenkins": [
+        ".jenkins.io",
+        ".updates.jenkins.io"
+    ],
+    "Let's-Encrypt": [
+        ".acme-v02.api.letsencrypt.org",
+        ".eff.org",
+        ".letsencrypt.org"
+    ],
+    "Maven-Central": [
+        ".maven.org",
+        ".sonatype.org"
+    ],
+    "Microsoft-Teams": [
+        ".teams.microsoft.com"
+    ],
+    "MuleSoft": [
+        ".anypoint.mulesoft.com",
+        ".mulesoft.com"
+    ],
+    "Nodejs": [
+        ".nodejs.org",
+        ".npmjs.com",
+        ".registry.npmjs.org"
+    ],
+    "NuGet": [
+        ".nuget.org"
+    ],
+    "OCI-S3-Singapore": [
+        ".objectstorage.ap-singapore-1.oraclecloud.com"
+    ],
+    "Python": [
+        ".pypi.org",
+        ".pypi.python.org",
+        ".python.org",
+        ".pythonhosted.org"
+    ],
+    "Slack": [
+        ".api.slack.com"
+    ],
+    "Telegram-API": [
+        ".api.telegram.org",
+        ".core.telegram.org",
+        ".telegram.org",
+        ".web.telegram.org"
+    ],
+    "Terraform-Registry": [
+        ".registry.terraform.io"
+    ],
+    "Travis-CI": [
+        ".travis-ci.com"
+    ],
+    "Ubuntu-repo": [
+        ".archive.ubuntu.com",
+        ".launchpad.net",
+        ".mirrors.ubuntu.com",
+        ".security.ubuntu.com"
+    ],
+    "Windows-Update": [
+        ".ctldl.windowsupdate.com",
+        ".dl.delivery.mp.microsoft.com",
+        ".download.windowsupdate.com",
+        ".fe2.update.microsoft.com",
+        ".ntservicepack.microsoft.com",
+        ".sls.update.microsoft.com",
+        ".stats.microsoft.com",
+        ".sws.update.microsoft.com",
+        ".tlu.dl.delivery.mp.microsoft.com",
+        ".tsfe.trafficshaping.dsp.mp.microsoft.com",
+        ".update.microsoft.com",
+        ".windowsupdate.com",
+        ".windowsupdate.microsoft.com",
+        ".wu.microsoft.com",
+        ".wustat.windows.com"
+    ],
+    "CIC-API": [
+        ".api.cic.gov.vn",
+        ".cic.gov.vn",
+        ".uat.cic.gov.vn"
+    ],
+    "Zalo-API": [
+        ".business.zalo.me",
+        ".developers.zalo.me",
+        ".open.zalo.me",
+        ".zalo.me",
+        ".zaloapp.com"
+    ],
+    "Kubernetes-Helm": [
+        ".helm.sh",
+        ".k8s.io"
+    ],
+    "Conda": [
+        ".conda.io",
+        ".repo.anaconda.com"
+    ],
+    "NVIDIA": [
+        ".nvcr.io",
+        ".nvidia.com"
+    ],
+    "Hugging-Face": [
+        ".huggingface.co"
+    ],
+    "OpenAI": [
+        ".openai.com"
+    ],
+    "Jira-FECREDIT": [
+        ".fecredit.atlassian.net"
+    ]
+}

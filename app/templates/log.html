@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}{{ config.WEBSITE_NAME }} - Access Logs{% endblock %}
+
+{% block content %}
+<div x-data="logViewer()" x-init="init()">
+    <!-- Header & Actions -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800">Access Logs</h2>
+            <p class="text-sm text-slate-500 mt-1">Monitor real-time proxy traffic and access events.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <!-- Live Toggle -->
+            <button @click="toggleLive" class="btn-secondary transition-all duration-200"
+                :class="isLive ? 'border-red-500/50 text-red-600 bg-red-50 hover:bg-red-100' : 'text-slate-500'">
+                <i class="fas fa-circle mr-2 text-xs" :class="isLive ? 'animate-pulse' : ''"></i>
+                <span x-text="isLive ? 'Live Updates On' : 'Live Updates Paused'"></span>
+            </button>
+
+            <button @click="fetchLogs(true)" class="btn-secondary" :disabled="isLoading">
+                <i class="fas fa-sync-alt mr-2" :class="isLoading ? 'fa-spin' : ''"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters Toolbar -->
+    <div class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4">
+        <!-- IP Filter -->
+        <div class="flex-1">
+            <input type="text" x-model="filters.ip" @keydown.enter="fetchLogs(true)"
+                placeholder="Filter by IP address..."
+                class="form-input w-full focus:ring-brand-100 focus:border-brand-500">
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex-1">
+            <select x-model="filters.status" @change="fetchLogs(true)"
+                class="form-select w-full focus:ring-brand-100 focus:border-brand-500">
+                <option value="ANY">Any Status</option>
+                <option value="SUCCESS">Success (200)</option>
+                <option value="DENIED">Denied (403)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Log Terminal -->
+    <div
+        class="bg-slate-900 rounded-lg shadow-lg overflow-hidden flex flex-col flex-1 min-h-[500px] h-[calc(100vh-14rem)]">
+        <!-- Terminal Header -->
+        <div
+            class="bg-slate-800/80 px-4 py-2 border-b border-slate-700 flex justify-between items-center backdrop-blur-sm">
+            <div class="flex items-center space-x-2">
+                <div class="flex space-x-1.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                </div>
+                <span class="text-xs text-slate-400 font-mono ml-3">/var/log/squid/access.log</span>
+            </div>
+            <div class="text-xs text-slate-500" x-show="lastUpdated">
+                Last updated: <span x-text="lastUpdated"></span>
+            </div>
+        </div>
+
+        <!-- Terminal Output -->
+        <div x-ref="logOutput"
+            class="flex-1 overflow-y-auto p-4 font-mono text-xs md:text-sm leading-relaxed text-green-400 whitespace-pre-wrap scroll-smooth custom-scrollbar"
+            style="font-family: 'JetBrains Mono', 'Fira Code', monospace;">
+            <template x-if="isLoading && !logs">
+                <div class="flex items-center justify-center h-full text-slate-500">
+                    <i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i>
+                    <span class="ml-2">Loading logs...</span>
+                </div>
+            </template>
+            <div x-html="highlightedLogs"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('logViewer', () => ({
+            isLive: true,
+            isLoading: false,
+            logs: '',
+            filters: {
+                ip: '{{ ip_filter }}',
+                status: '{{ status_filter }}'
+            },
+            pollInterval: null,
+            lastUpdated: null,
+
+            init() {
+                // Initial fetch using hidden store to avoid JS syntax errors with quotes/newlines
+                const store = document.getElementById('server-log-store');
+                this.logs = store ? store.value : '';
+
+                // Wait for DOM to render highlighting then scroll
+                this.$nextTick(() => {
+                    this.scrollToBottom();
+                });
+
+                this.startPolling();
+            },
+
+            toggleLive() {
+                this.isLive = !this.isLive;
+                if (this.isLive) {
+                    this.fetchLogs();
+                    this.startPolling();
+                } else {
+                    this.stopPolling();
+                }
+            },
+
+            startPolling() {
+                this.stopPolling(); // Ensure no duplicates
+                this.pollInterval = setInterval(() => {
+                    if (this.isLive) this.fetchLogs();
+                }, 3000);
+            },
+
+            stopPolling() {
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
+                }
+            },
+
+            async fetchLogs(force = false) {
+                if (!this.isLive && !force) return;
+
+                this.isLoading = true;
+                const params = new URLSearchParams({
+                    ip_filter: this.filters.ip,
+                    status_filter: this.filters.status
+                });
+
+                try {
+                    const response = await fetch(`/log?${params.toString()}`);
+                    const html = await response.text();
+
+                    // Parse the specific content from the full HTML response
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    // Note: In a real SPA or with JSON API this is easier. 
+                    // Here we assume the server renders the same template.
+                    // We need to extract the raw text logs. 
+                    // A better way for the server would be to return JSON if requested via AJAX.
+                    // For now, we scrape our own page logic or rely on the logic below.
+
+                    // Actually, the server returns the full page. We need to cheat a bit or refactor backend.
+                    // To stay safe without backend refactor: Extract content from #log_output if it exists in response
+                    // OR, since the previous script did it:
+                    // const newLogs = doc.querySelector('#log_output').innerText; 
+
+                    // Wait, the previous script used: doc.querySelector('#log_output').innerText
+                    // Let's use that method to be safe with current backend.
+
+                    const logContainer = doc.querySelector('[x-ref="logOutput"]'); // Or match the structure
+                    // Fallback for the simpler structure in previous version if classes changed
+                    const rawLogs = logContainer ? logContainer.innerText : doc.body.innerText;
+
+                    // Clean up potential double escaping if grabbing innerText of already escaped HTML?
+                    // actually doc.querySelector(...).innerText gives decoded text.
+
+                    // Let's try to be more robust. If we can't find the element, we might be in trouble.
+                    // But since we control the template, we know the structure.
+                    // Look for the x-html="highlightedLogs" parent or similar.
+                    // Actually, let's just grab the variable from the template context if possible? 
+                    // No, fetch returns rendered HTML.
+
+                    // Strategy: Look for the div that contains the logs.
+                    // In the new template: <div x-ref="logOutput"> ... </div>
+                    // The inner text of that div (before highlighter) is what we want? 
+                    // No, the server renders `{{ logs | safe }}` directly into the div in the old version.
+                    // In my new version, I am putting it in `x-html`. 
+                    // So the server rendered page will have the text inside the div.
+
+                    // Let's assume the previous logic:
+                    // const newLogs = doc.querySelector('#log_output').innerText;
+                    // I removed id="log_output". I should add it back or use a selector.
+                    // Let's add id="raw_logs_server" to a hidden element to make extraction easy?
+                    // Or just use the x-ref.
+
+                    // Let's stick to the previous working selector logic by adding an ID to the container in the template?
+                    // Or just select by class.
+
+                    // BETTER: Identify the content.
+                    // I will add id="server-log-data" to a hidden element to make this robust.
+
+                    // Wait, I can't easily change the backend response format (HTML) right now without editing `routes.py`.
+                    // But I did edit `routes.py` earlier.
+                    // If I request `/log`, it renders `log.html`.
+                    // The `log.html` I am writing NOW will be what returns.
+                    // So if I put the logs in a hidden div with ID, I can parse it.
+
+                    const parsedLogs = doc.getElementById('server-log-store').value;
+
+                    if (parsedLogs !== this.logs) {
+                        this.logs = parsedLogs;
+                        this.lastUpdated = new Date().toLocaleTimeString();
+                        this.$nextTick(() => {
+                            this.scrollToBottom();
+                        });
+                    }
+
+                } catch (error) {
+                    console.error('Error fetching logs:', error);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            scrollToBottom() {
+                const el = this.$refs.logOutput;
+                if (el) el.scrollTop = el.scrollHeight;
+            },
+
+            get highlightedLogs() {
+                if (!this.logs) return '';
+                return this.logs
+                    .replace(/^\s+/gm, '')
+                    .replace(/\b\d{1,3}(\.\d{1,3}){3}\b/g, '<span class="text-yellow-300 font-bold">$&</span>')
+                    .replace(/\[\d{2}\/[A-Za-z]{3}\/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4}\]/g, '<span class="text-cyan-300 font-bold">$&</span>')
+                    .replace(/\b200\b/g, '<span class="text-green-500 font-bold">$&</span>')
+                    .replace(/\b403\b/g, '<span class="text-red-500 font-bold">$&</span>')
+                    .replace(/\b503\b/g, '<span class="text-orange-400 font-bold">$&</span>')
+                    .replace(/\b(TCP_TUNNEL|TCP_MISS|TCP_HIT|TCP_REFRESH_MISS)\b/g, '<span class="text-purple-400">$1</span>')
+                    .replace(/\b(CONNECT|GET|POST|HEAD)\b/g, '<span class="text-blue-400 font-bold">$1</span>');
+            }
+        }));
+    });
+</script>
+
+<!-- Hidden store for JS parsing -->
+<textarea id="server-log-store" class="hidden">{{ logs }}</textarea>
+{% endblock %}
