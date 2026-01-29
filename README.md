@@ -15,26 +15,50 @@
 - **Manage Clients**: Allows users to add, edit, and delete client configurations.
 - **Apply Configuration**: Enables the application and backup of Squid configurations.
 
-## Installation
-sudo dnf install python3-pip  # hoặc dùng yum nếu dnf không có
-sudo useradd -g squid-man -m -s /sbin/nologin squid-man
+### 1. System Requirements (CentOS/RHEL/AlmaLinux)
+```bash
+# Install Python 3 and Git
+sudo dnf install python3 python3-pip git -y
+```
+
+### 2. User & Group Setup (For Linux Permission)
+Create the `squid-man` group and user to handle permissions securely.
+```bash
 sudo groupadd squid-man
 sudo useradd -g squid-man -m -s /sbin/nologin squid-man
-sudo usermod -aG squid-man squid-man
+```
 
+### 3. Get the Code (Git Clone)
+Download code from your repository (replace URL with your actual repo):
+```bash
+cd /opt
+sudo git clone https://github.com/YOUR_USERNAME/squid-manager.git
+# Or if you already have it, just update:
+# cd squid-manager && git pull
+cd squid-manager
+```
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   ```
-2. Navigate to the project directory:
-   ```
-   cd Squid_Manager
-   ```
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+### 4. Install Dependencies
+It is recommended to use a virtual environment, but for simple server setup:
+```bash
+sudo pip3 install -r requirements.txt
+```
+
+### 5. Configuration (.env)
+You must create a `.env` file since it's not included in Git for security.
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit the file to set your Admin Password
+nano .env
+```
+Inside `.env`, verify or change:
+```ini
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_secure_password  <-- CHANGE THIS
+DATABASE_URL=sqlite:///squid_manager.db
+```
 
 ## Usage
 To run the application, execute:
