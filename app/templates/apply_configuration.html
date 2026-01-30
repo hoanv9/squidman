@@ -12,7 +12,7 @@
 
     <!-- Dynamic Top Row: 1-Click Apply & Client Config -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" x-data="{ 
-        port: '3128',
+        port: '{{ squid_port }}',
         hostname: '',
         copySuccess: false,
         get exportCommand() {

@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required
 from app.services.configuration_service import ConfigurationService
 from app.services.backup_service import BackupService
+from app.services.system_service import SystemService
 
 configuration_bp = Blueprint('apply_configuration', __name__)
 
@@ -63,7 +64,10 @@ def apply_configuration():
 
         return redirect(url_for('apply_configuration.apply_configuration'))
 
-    return render_template('apply_configuration.html', active_tab='apply_configuration')
+    # Get Squid port for Client Config display
+    squid_port = SystemService.get_squid_port()
+    
+    return render_template('apply_configuration.html', active_tab='apply_configuration', squid_port=squid_port)
 
 @configuration_bp.route('/backup/create', methods=['POST'])
 @login_required

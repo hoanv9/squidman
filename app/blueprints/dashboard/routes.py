@@ -36,6 +36,7 @@ def dashboard():
     squid_status, squid_status_text = SystemService.get_squid_status()
     squid_started_time = SystemService.get_squid_log_time("Starting")
     squid_reload_time = SystemService.get_squid_log_time("Reloading")
+    squid_port = SystemService.get_squid_port()
 
     # Prepare View Data
     all_client_data = []
@@ -66,6 +67,7 @@ def dashboard():
         server_uptime=server_uptime,
         squid_started_time=squid_started_time,
         squid_reload_time=squid_reload_time,
+        squid_port=squid_port,
         client_data=filtered_client_data,
         total_ips=total_ips,
         active_ips=active_ips,

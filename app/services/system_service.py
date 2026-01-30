@@ -1,6 +1,7 @@
 import os
 import psutil
 import time
+import re
 from datetime import datetime
 
 class SystemService:
@@ -45,6 +46,35 @@ class SystemService:
         except Exception:
             pass
         return None
+
+    @staticmethod
+    def get_squid_port():
+        """Detect Squid proxy port from configuration file."""
+        # Possible config file locations
+        config_paths = [
+            '/etc/squid/squid.conf',      # Debian/Ubuntu
+            '/etc/squid3/squid.conf',     # Older Ubuntu
+            'C:\\Squid\\etc\\squid.conf', # Windows
+            'squid.conf'                   # Local dev
+        ]
+        
+        # Try to find and read config file
+        for config_path in config_paths:
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r') as f:
+                        content = f.read()
+                        # Look for http_port directive
+                        # Pattern: http_port 3128 (or any port number)
+                        match = re.search(r'^\s*http_port\s+(\d+)', content, re.MULTILINE)
+                        if match:
+                            return match.group(1)
+                except Exception as e:
+                    print(f"Error reading {config_path}: {e}")
+                    continue
+        
+        # Default fallback
+        return "3128"
 
     @staticmethod
     def get_system_stats():
