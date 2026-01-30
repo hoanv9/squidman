@@ -79,6 +79,11 @@
     </div>
 </div>
 
+<!-- Hidden store for logs -->
+<textarea id="server-log-store" class="hidden">{{ logs }}</textarea>
+{% endblock %}
+
+{% block scripts %}
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('logViewer', () => ({
@@ -86,155 +91,106 @@
             isLoading: false,
             logs: '',
             filters: {
-                ip: '{{ ip_filter }}',
-                status: '{{ status_filter }}'
+                ip: {{ ip_filter | tojson | safe if ip_filter else "''"
+    }},
+        status: {{ status_filter | tojson | safe if status_filter else "'ANY'" }}
             },
-            pollInterval: null,
-            lastUpdated: null,
+    pollInterval: null,
+        lastUpdated: null,
 
             init() {
-                // Initial fetch using hidden store to avoid JS syntax errors with quotes/newlines
-                const store = document.getElementById('server-log-store');
-                this.logs = store ? store.value : '';
+        // Initial fetch using hidden store to avoid JS syntax errors with quotes/newlines
+        const store = document.getElementById('server-log-store');
+        this.logs = store ? store.value : '';
 
-                // Wait for DOM to render highlighting then scroll
+        // Wait for DOM to render highlighting then scroll
+        this.$nextTick(() => {
+            this.scrollToBottom();
+        });
+
+        this.startPolling();
+    },
+
+    toggleLive() {
+        this.isLive = !this.isLive;
+        if (this.isLive) {
+            this.fetchLogs();
+            this.startPolling();
+        } else {
+            this.stopPolling();
+        }
+    },
+
+    startPolling() {
+        this.stopPolling(); // Ensure no duplicates
+        this.pollInterval = setInterval(() => {
+            if (this.isLive) this.fetchLogs();
+        }, 3000);
+    },
+
+    stopPolling() {
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
+        }
+    },
+
+            async fetchLogs(force = false) {
+        if (!this.isLive && !force) return;
+
+        this.isLoading = true;
+        const params = new URLSearchParams({
+            ip_filter: this.filters.ip,
+            status_filter: this.filters.status
+        });
+
+        try {
+            const response = await fetch(`/log?${params.toString()}`);
+            const html = await response.text();
+
+            // Parse the specific content from the response
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Robustly extract logs using the hidden textarea ID
+            const store = doc.getElementById('server-log-store');
+            const parsedLogs = store ? store.value : '';
+
+            if (parsedLogs !== this.logs) {
+                this.logs = parsedLogs;
+                this.lastUpdated = new Date().toLocaleTimeString();
                 this.$nextTick(() => {
                     this.scrollToBottom();
                 });
+            }
 
-                this.startPolling();
-            },
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+        } finally {
+            this.isLoading = false;
+        }
+    },
 
-            toggleLive() {
-                this.isLive = !this.isLive;
-                if (this.isLive) {
-                    this.fetchLogs();
-                    this.startPolling();
-                } else {
-                    this.stopPolling();
-                }
-            },
-
-            startPolling() {
-                this.stopPolling(); // Ensure no duplicates
-                this.pollInterval = setInterval(() => {
-                    if (this.isLive) this.fetchLogs();
-                }, 3000);
-            },
-
-            stopPolling() {
-                if (this.pollInterval) {
-                    clearInterval(this.pollInterval);
-                    this.pollInterval = null;
-                }
-            },
-
-            async fetchLogs(force = false) {
-                if (!this.isLive && !force) return;
-
-                this.isLoading = true;
-                const params = new URLSearchParams({
-                    ip_filter: this.filters.ip,
-                    status_filter: this.filters.status
-                });
-
-                try {
-                    const response = await fetch(`/log?${params.toString()}`);
-                    const html = await response.text();
-
-                    // Parse the specific content from the full HTML response
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    // Note: In a real SPA or with JSON API this is easier. 
-                    // Here we assume the server renders the same template.
-                    // We need to extract the raw text logs. 
-                    // A better way for the server would be to return JSON if requested via AJAX.
-                    // For now, we scrape our own page logic or rely on the logic below.
-
-                    // Actually, the server returns the full page. We need to cheat a bit or refactor backend.
-                    // To stay safe without backend refactor: Extract content from #log_output if it exists in response
-                    // OR, since the previous script did it:
-                    // const newLogs = doc.querySelector('#log_output').innerText; 
-
-                    // Wait, the previous script used: doc.querySelector('#log_output').innerText
-                    // Let's use that method to be safe with current backend.
-
-                    const logContainer = doc.querySelector('[x-ref="logOutput"]'); // Or match the structure
-                    // Fallback for the simpler structure in previous version if classes changed
-                    const rawLogs = logContainer ? logContainer.innerText : doc.body.innerText;
-
-                    // Clean up potential double escaping if grabbing innerText of already escaped HTML?
-                    // actually doc.querySelector(...).innerText gives decoded text.
-
-                    // Let's try to be more robust. If we can't find the element, we might be in trouble.
-                    // But since we control the template, we know the structure.
-                    // Look for the x-html="highlightedLogs" parent or similar.
-                    // Actually, let's just grab the variable from the template context if possible? 
-                    // No, fetch returns rendered HTML.
-
-                    // Strategy: Look for the div that contains the logs.
-                    // In the new template: <div x-ref="logOutput"> ... </div>
-                    // The inner text of that div (before highlighter) is what we want? 
-                    // No, the server renders `{{ logs | safe }}` directly into the div in the old version.
-                    // In my new version, I am putting it in `x-html`. 
-                    // So the server rendered page will have the text inside the div.
-
-                    // Let's assume the previous logic:
-                    // const newLogs = doc.querySelector('#log_output').innerText;
-                    // I removed id="log_output". I should add it back or use a selector.
-                    // Let's add id="raw_logs_server" to a hidden element to make extraction easy?
-                    // Or just use the x-ref.
-
-                    // Let's stick to the previous working selector logic by adding an ID to the container in the template?
-                    // Or just select by class.
-
-                    // BETTER: Identify the content.
-                    // I will add id="server-log-data" to a hidden element to make this robust.
-
-                    // Wait, I can't easily change the backend response format (HTML) right now without editing `routes.py`.
-                    // But I did edit `routes.py` earlier.
-                    // If I request `/log`, it renders `log.html`.
-                    // The `log.html` I am writing NOW will be what returns.
-                    // So if I put the logs in a hidden div with ID, I can parse it.
-
-                    const parsedLogs = doc.getElementById('server-log-store').value;
-
-                    if (parsedLogs !== this.logs) {
-                        this.logs = parsedLogs;
-                        this.lastUpdated = new Date().toLocaleTimeString();
-                        this.$nextTick(() => {
-                            this.scrollToBottom();
-                        });
-                    }
-
-                } catch (error) {
-                    console.error('Error fetching logs:', error);
-                } finally {
-                    this.isLoading = false;
-                }
-            },
-
-            scrollToBottom() {
-                const el = this.$refs.logOutput;
-                if (el) el.scrollTop = el.scrollHeight;
-            },
+    scrollToBottom() {
+        const el = this.$refs.logOutput;
+        if (el) el.scrollTop = el.scrollHeight;
+    },
 
             get highlightedLogs() {
-                if (!this.logs) return '';
-                return this.logs
-                    .replace(/^\s+/gm, '')
-                    .replace(/\b\d{1,3}(\.\d{1,3}){3}\b/g, '<span class="text-yellow-300 font-bold">$&</span>')
-                    .replace(/\[\d{2}\/[A-Za-z]{3}\/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4}\]/g, '<span class="text-cyan-300 font-bold">$&</span>')
-                    .replace(/\b200\b/g, '<span class="text-green-500 font-bold">$&</span>')
-                    .replace(/\b403\b/g, '<span class="text-red-500 font-bold">$&</span>')
-                    .replace(/\b503\b/g, '<span class="text-orange-400 font-bold">$&</span>')
-                    .replace(/\b(TCP_TUNNEL|TCP_MISS|TCP_HIT|TCP_REFRESH_MISS)\b/g, '<span class="text-purple-400">$1</span>')
-                    .replace(/\b(CONNECT|GET|POST|HEAD)\b/g, '<span class="text-blue-400 font-bold">$1</span>');
-            }
+        if (!this.logs) return '';
+        // Simple highlighting logic
+        return this.logs
+            .replace(/^\s+/gm, '') // Trim leading whitespace line by line
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // Escape HTML first
+            .replace(/\b\d{1,3}(\.\d{1,3}){3}\b/g, '<span class="text-yellow-300 font-bold">$&</span>')
+            .replace(/\[\d{2}\/[A-Za-z]{3}\/\d{4}:\d{2}:\d{2}:\d{2} \+\d{4}\]/g, '<span class="text-cyan-300 font-bold">$&</span>')
+            .replace(/\b200\b/g, '<span class="text-green-500 font-bold">$&</span>')
+            .replace(/\b403\b/g, '<span class="text-red-500 font-bold">$&</span>')
+            .replace(/\b503\b/g, '<span class="text-orange-400 font-bold">$&</span>')
+            .replace(/\b(TCP_TUNNEL|TCP_MISS|TCP_HIT|TCP_REFRESH_MISS)\b/g, '<span class="text-purple-400">$1</span>')
+            .replace(/\b(CONNECT|GET|POST|HEAD)\b/g, '<span class="text-blue-400 font-bold">$1</span>');
+    }
         }));
     });
 </script>
-
-<!-- Hidden store for JS parsing -->
-<textarea id="server-log-store" class="hidden">{{ logs }}</textarea>
 {% endblock %}
