@@ -2,6 +2,15 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+.egg
+dist/
+build/
+
+# Virtual Environments
+venv/
+.venv/
+env/
 
 # Environment variables
 .env
@@ -9,10 +18,17 @@ __pycache__/
 # Database
 *.db
 *.test.db
+*.sqlite
 
 # Logs
 logs/
 *.log
+
+# Javascript / Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Squid Output
 output/
@@ -20,3 +36,16 @@ output/
 # IDEs
 .vscode/
 .idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent
+.agent/
+
+# Testing
+.pytest_cache/
+coverage/
+htmlcov/

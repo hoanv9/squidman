@@ -39,23 +39,18 @@ cd squid-manager
 ```
 
 ### 4. Install Dependencies
-It is highly recommended to use a Python Virtual Environment to isolate dependencies.
+It is mandatory to use a Python Virtual Environment to isolate dependencies.
 
-**Option A: Quick Setup (System-wide)**
 ```bash
-sudo pip3 install -r requirements.txt
-```
-
-**Option B: Virtual Environment (Recommended)**
-```bash
-# 1. Install virtualenv
+# 1. Install virtualenv (if not already installed)
 sudo dnf install python3-virtualenv -y  # CentOS/RHEL
-# apt install python3-venv -y           # Ubuntu/Debian
+# OR
+# sudo apt install python3-venv -y      # Ubuntu/Debian
 
-# 2. Create venv
+# 2. Create virtual environment
 python3 -m venv venv
 
-# 3. Activate venv
+# 3. Activate virtual environment
 source venv/bin/activate
 
 # 4. Install requirements
