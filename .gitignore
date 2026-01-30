@@ -19,6 +19,7 @@ env/
 *.db
 *.test.db
 *.sqlite
+db/*.json
 
 # Logs
 /logs/
