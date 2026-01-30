@@ -7,10 +7,18 @@ from app import create_app
 app = create_app()
 
 # Cấu hình xoay vòng log
+import os
+
+# Ensure logs directory exists
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+# Cấu hình xoay vòng log
 log_handler = RotatingFileHandler(
     'logs/access.log',  # File log
     maxBytes=5 * 1024 * 1024,  # Giới hạn kích thước file log (5MB)
-    backupCount=3  # Số lượng file log sao lưu
+    backupCount=3,  # Số lượng file log sao lưu
+    encoding='utf-8' # Encoding
 )
 log_handler.setLevel(logging.INFO)  # Mức độ log (INFO)
 log_handler.setFormatter(logging.Formatter(
