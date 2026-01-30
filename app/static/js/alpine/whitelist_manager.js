@@ -23,6 +23,7 @@ document.addEventListener('alpine:init', () => {
         isDeleteModalOpen: false,
         isImportModalOpen: false,
         modalTitle: '',
+        modalMode: 'add', // add | edit
         formAction: '',
         formData: { value: '', description: '', templateName: '', templateDomains: '' },
         deleteId: null,
@@ -239,6 +240,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openDomainIpModal(mode, item = null) {
+            this.modalMode = mode;
             const type = this.currentTab === 'domains' ? 'domain' : 'ip';
 
             if (mode === 'add') {
@@ -259,6 +261,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openTemplateModal(mode, item = null) {
+            this.modalMode = mode;
             if (mode === 'add') {
                 this.modalTitle = 'Add New Template';
                 this.formAction = '/whitelist/templates/add';

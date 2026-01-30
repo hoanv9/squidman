@@ -263,6 +263,32 @@
         <!-- If Add/Edit Domain/IP -->
         <template x-if="currentTab !== 'templates'">
             <div class="space-y-4">
+                <!-- Info Box (Only show when adding) -->
+                <div x-show="modalMode === 'add'" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-600 mt-0.5 mr-3"></i>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-semibold text-blue-900 mb-1"
+                                x-text="currentTab === 'domains' ? 'What are Global Domains?' : 'What are Global IPs?'">
+                            </h4>
+                            <p class="text-xs text-blue-800 leading-relaxed" x-show="currentTab === 'domains'">
+                                Global Domains are allowed for <strong>all clients</strong> using the proxy. When you
+                                add a domain here,
+                                every client can access it without individual configuration. Perfect for common services
+                                like
+                                Google, Microsoft, or company-wide resources.
+                            </p>
+                            <p class="text-xs text-blue-800 leading-relaxed" x-show="currentTab === 'ips'">
+                                Global IPs are allowed for <strong>all clients</strong> using the proxy. When you add an
+                                IP or CIDR range here,
+                                every client can access it without individual configuration. Useful for internal
+                                servers,
+                                shared resources, or trusted IP ranges.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label class="form-label">
                         <span x-text="currentTab === 'domains' ? 'Domain' : 'IP Address'"></span>
