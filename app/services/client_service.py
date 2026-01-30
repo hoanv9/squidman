@@ -28,9 +28,17 @@ class ClientService:
                 unique_domains = validate_allowed_domains(data.get('allowed_domains'))
                 allowed_domains_str = '\n'.join(unique_domains)
 
+            # Auto-lookup hostname if not provided
+            dns_hostname = data.get('dns_hostname')
+            if not dns_hostname or dns_hostname.strip() == '':
+                hostname, error = ClientService.perform_nslookup(data['ip_address'])
+                if hostname and not error:
+                    dns_hostname = hostname
+                # If lookup fails, dns_hostname remains None/empty
+
             new_client = Client(
                 ip_address=data['ip_address'],
-                dns_hostname=data.get('dns_hostname'),
+                dns_hostname=dns_hostname,
                 ticket_id=data.get('ticket_id'),
                 expiration_date=datetime.strptime(data['expiration_date'], '%Y-%m-%d'),
                 allowed_domains=allowed_domains_str,
