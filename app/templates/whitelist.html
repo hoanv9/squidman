@@ -270,9 +270,12 @@
                     </label>
                     <input type="text" :name="currentTab === 'domains' ? 'domain' : 'ip_address'"
                         x-model="formData.value" required class="form-input focus:ring-brand-100"
-                        :placeholder="currentTab === 'domains' ? 'example.com' : '192.168.1.1'" autocomplete="off">
+                        :placeholder="currentTab === 'domains' ? 'example.com' : '192.168.1.1 or 192.168.1.0/24'"
+                        autocomplete="off">
                     <p class="text-xs text-slate-500 mt-1" x-show="currentTab === 'domains'">Use .example.com for
                         wildcards</p>
+                    <p class="text-xs text-slate-500 mt-1" x-show="currentTab === 'ips'">Supports single IP
+                        (192.168.1.1) or CIDR notation (192.168.1.0/24)</p>
                 </div>
                 <div>
                     <label class="form-label">Description</label>

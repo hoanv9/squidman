@@ -35,6 +35,36 @@
       "bandwidth_in": 0.18,
       "bandwidth_out": 3.31,
       "total": 3.49
+    },
+    {
+      "timestamp": "2026-01-30T13:14:57.359603",
+      "bandwidth_in": 0.49,
+      "bandwidth_out": 0.02,
+      "total": 0.51
+    },
+    {
+      "timestamp": "2026-01-30T13:19:57.352385",
+      "bandwidth_in": 1.05,
+      "bandwidth_out": 0.04,
+      "total": 1.09
+    },
+    {
+      "timestamp": "2026-01-30T13:24:57.350322",
+      "bandwidth_in": 1.28,
+      "bandwidth_out": 0.01,
+      "total": 1.28
+    },
+    {
+      "timestamp": "2026-01-30T13:29:30.442919",
+      "bandwidth_in": 0.27,
+      "bandwidth_out": 3.83,
+      "total": 4.1
+    },
+    {
+      "timestamp": "2026-01-30T13:29:49.902341",
+      "bandwidth_in": 0.17,
+      "bandwidth_out": 2.73,
+      "total": 2.9
     }
   ]
 }

@@ -1,6 +1,6 @@
 from app.models.whitelist import GlobalDomainWhitelist, GlobalIPWhitelist
 from app.extensions import db
-from app.utils import is_valid_ip, validate_domain_entry
+from app.utils import is_valid_ip_or_cidr, validate_domain_entry
 import logging
 
 class WhitelistService:
@@ -83,8 +83,8 @@ class WhitelistService:
             ip = data.get('ip_address')
             if not ip:
                 return False, "IP Address is required."
-            if not is_valid_ip(ip):
-                return False, "Invalid IP address format."
+            if not is_valid_ip_or_cidr(ip):
+                return False, "Invalid IP address or CIDR format (e.g., 192.168.1.1 or 192.168.1.0/24)."
 
             if GlobalIPWhitelist.query.filter_by(ip_address=ip).first():
                 return False, f"IP {ip} already exists."
@@ -124,8 +124,8 @@ class WhitelistService:
             
             new_ip = data.get('ip_address')
             if new_ip and new_ip != ip_entry.ip_address:
-                if not is_valid_ip(new_ip):
-                    return False, "Invalid IP address format."
+                if not is_valid_ip_or_cidr(new_ip):
+                    return False, "Invalid IP address or CIDR format (e.g., 192.168.1.1 or 192.168.1.0/24)."
                 if GlobalIPWhitelist.query.filter_by(ip_address=new_ip).first():
                      return False, f"IP {new_ip} already exists."
                 ip_entry.ip_address = new_ip
