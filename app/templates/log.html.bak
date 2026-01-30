@@ -91,9 +91,10 @@
             isLoading: false,
             logs: '',
             filters: {
-                ip: {% if ip_filter %}{ { ip_filter | tojson | safe } } {% else %} ''{% endif %},
-        status: {% if status_filter %} { { status_filter | tojson | safe } } {% else %} 'ANY'{% endif %}
+                ip: {{ ip_filter | tojson | safe if ip_filter else "''" }
     },
+    status: { { status_filter | tojson | safe if status_filter else "'ANY'" } }
+            },
     pollInterval: null,
         lastUpdated: null,
 
@@ -142,7 +143,7 @@
         });
 
         try {
-            const response = await fetch(`/log?${params}`);
+            const response = await fetch(`/log?${params.toString()}`);
             const html = await response.text();
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
@@ -178,8 +179,8 @@
             .replace(/\b200\b/g, '<span class="text-green-500 font-bold">$&</span>')
             .replace(/\b403\b/g, '<span class="text-red-500 font-bold">$&</span>')
             .replace(/\b503\b/g, '<span class="text-orange-400 font-bold">$&</span>')
-            .replace(/\b(TCP_TUNNEL|TCP_MISS|TCP_HIT|TCP_REFRESH_MISS)\b/g, '<span class="text-purple-400">$&</span>')
-            .replace(/\b(CONNECT|GET|POST|HEAD)\b/g, '<span class="text-blue-400 font-bold">$&</span>');
+            .replace(/\b(TCP_TUNNEL|TCP_MISS|TCP_HIT|TCP_REFRESH_MISS)\b/g, '<span class="text-purple-400">$1</span>')
+            .replace(/\b(CONNECT|GET|POST|HEAD)\b/g, '<span class="text-blue-400 font-bold">$1</span>');
     }
         };
     }
