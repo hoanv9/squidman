@@ -36,6 +36,7 @@ class Config:
     SQUID_CONF_DIR = os.getenv('SQUID_CONF_DIR', '/etc/squid/conf.d/')
     SQUID_DOMAINS_DIR = os.getenv('SQUID_DOMAINS_DIR', '/etc/squid/domains/')
     OUTPUT_DIR = os.getenv('OUTPUT_DIR', 'output/')
+    SQUID_ACCESS_LOG = os.getenv('SQUID_ACCESS_LOG', '/var/log/squid/access.log')
 
     # Logging
     LOGGING_DIR = os.getenv('LOGGING_DIR', 'logs/')

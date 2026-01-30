@@ -21,7 +21,7 @@ env/
 *.sqlite
 
 # Logs
-logs/
+/logs/
 *.log
 
 # Javascript / Node
