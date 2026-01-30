@@ -1,0 +1,16 @@
+{
+  "records": [
+    {
+      "timestamp": "2026-01-30T12:57:09.223324",
+      "bandwidth_in": 0.18,
+      "bandwidth_out": 2.26,
+      "total": 2.44
+    },
+    {
+      "timestamp": "2026-01-30T13:02:09.231104",
+      "bandwidth_in": 0.28,
+      "bandwidth_out": 0.03,
+      "total": 0.31
+    }
+  ]
+}

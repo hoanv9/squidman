@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, jsonify, request
 from app.models.client import Client
 from app.services.system_service import SystemService
+from app.services.bandwidth_history_service import BandwidthHistoryService
 from sqlalchemy.orm import load_only
 from datetime import datetime
 from flask_login import login_required
@@ -76,3 +77,10 @@ def dashboard():
 @dashboard_bp.route('/api/system_stats', methods=['GET'])
 def system_stats():
     return SystemService.get_system_stats()
+
+@dashboard_bp.route('/api/bandwidth_history', methods=['GET'])
+def bandwidth_history():
+    """API endpoint để lấy bandwidth history data cho chart."""
+    hours = request.args.get('hours', default=24, type=int)
+    chart_data = BandwidthHistoryService.get_chart_data(hours)
+    return jsonify(chart_data)

@@ -6,6 +6,7 @@ from app.extensions import db, csrf
 from app.models.user import User  # Import User model
 from config import Config
 from app.services.auto_tasks import auto_generate_and_apply_config
+from app.services.bandwidth_history_service import BandwidthHistoryService
 from datetime import datetime
 
 import os
@@ -52,7 +53,7 @@ def create_app():
     scheduler.init_app(app)
     scheduler.start()
 
-    # Định nghĩa job định kỳ
+    # Định nghĩa job định kỳ - Auto generate config
     scheduler.add_job(
         id='daily_generate_and_apply_config',
         func=lambda: auto_generate_and_apply_config(app),  # Truyền app vào hàm
@@ -60,6 +61,19 @@ def create_app():
         hour=app.config['JOB_HOUR'],  # Lấy giờ từ config
         minute=app.config['JOB_MINUTE']  # Lấy phút từ config
     )
+    
+    # Định nghĩa job định kỳ - Bandwidth tracking (mỗi 5 phút)
+    scheduler.add_job(
+        id='bandwidth_capture',
+        func=BandwidthHistoryService.capture_bandwidth,
+        trigger='interval',
+        minutes=5
+    )
+    
+    # Capture bandwidth ngay lập tức khi khởi động
+    with app.app_context():
+        BandwidthHistoryService.capture_bandwidth()
+
 
     # Initialize Flask-Login
     login_manager.login_view = 'auth.login'

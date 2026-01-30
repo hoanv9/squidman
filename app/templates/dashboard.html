@@ -11,6 +11,27 @@
         </div>
     </div>
 
+    <!-- Summary Numbers -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-brand-500">
+            <div class="text-sm text-slate-500 uppercase font-semibold">Total Clients</div>
+            <div class="text-3xl font-bold text-slate-800 mt-1">{{ total_ips }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
+            <div class="text-sm text-slate-500 uppercase font-semibold">Active Clients</div>
+            <div class="text-3xl font-bold text-green-600 mt-1">{{ active_ips }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-red-500">
+            <div class="text-sm text-slate-500 uppercase font-semibold">Expired Clients</div>
+            <div class="text-3xl font-bold text-red-600 mt-1">{{ expired_ips }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-teal-500">
+            <div class="text-sm text-slate-500 uppercase font-semibold">Total Domains</div>
+            <div class="text-3xl font-bold text-teal-600 mt-1">{{ total_domains }}</div>
+        </div>
+    </div>
+
+
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- CPU Usage -->
@@ -70,25 +91,24 @@
         </div>
     </div>
 
-    <!-- Summary Numbers -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-brand-500">
-            <div class="text-sm text-slate-500 uppercase font-semibold">Total Clients</div>
-            <div class="text-3xl font-bold text-slate-800 mt-1">{{ total_ips }}</div>
+    <!-- Bandwidth History Chart -->
+    <div class="bg-white rounded-lg shadow-sm p-6 border border-slate-100">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-slate-700">Bandwidth Usage (Last 24 Hours)</h3>
+            <div class="flex gap-2">
+                <button onclick="loadBandwidthChart(6)"
+                    class="px-3 py-1 text-xs rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700">6h</button>
+                <button onclick="loadBandwidthChart(12)"
+                    class="px-3 py-1 text-xs rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700">12h</button>
+                <button onclick="loadBandwidthChart(24)"
+                    class="px-3 py-1 text-xs rounded-md bg-brand-500 text-white">24h</button>
+            </div>
         </div>
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
-            <div class="text-sm text-slate-500 uppercase font-semibold">Active Clients</div>
-            <div class="text-3xl font-bold text-green-600 mt-1">{{ active_ips }}</div>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-red-500">
-            <div class="text-sm text-slate-500 uppercase font-semibold">Expired Clients</div>
-            <div class="text-3xl font-bold text-red-600 mt-1">{{ expired_ips }}</div>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-teal-500">
-            <div class="text-sm text-slate-500 uppercase font-semibold">Total Domains</div>
-            <div class="text-3xl font-bold text-teal-600 mt-1">{{ total_domains }}</div>
+        <div class="relative" style="height: 300px;">
+            <canvas id="bandwidthChart"></canvas>
         </div>
     </div>
+
 
     <!-- Clients Table Section -->
     <div class="bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden">
@@ -228,6 +248,100 @@
 
     refreshStats();
     setInterval(refreshStats, 3000);
+
+    // Bandwidth Chart Setup
+    let bandwidthChart = null;
+    let currentHours = 24;
+
+    const loadBandwidthChart = (hours = 24) => {
+        currentHours = hours;
+
+        // Update button states
+        document.querySelectorAll('[onclick^="loadBandwidthChart"]').forEach(btn => {
+            const btnHours = parseInt(btn.getAttribute('onclick').match(/\d+/)[0]);
+            if (btnHours === hours) {
+                btn.className = 'px-3 py-1 text-xs rounded-md bg-brand-500 text-white';
+            } else {
+                btn.className = 'px-3 py-1 text-xs rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700';
+            }
+        });
+
+        fetch(`/api/bandwidth_history?hours=${hours}`)
+            .then(res => res.json())
+            .then(data => {
+                const ctx = document.getElementById('bandwidthChart').getContext('2d');
+
+                if (bandwidthChart) {
+                    bandwidthChart.destroy();
+                }
+
+                bandwidthChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Bandwidth (Mbps)',
+                            data: data.data,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: (context) => {
+                                        return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} Mbps`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Mbps'
+                                },
+                                ticks: {
+                                    callback: (value) => value.toFixed(1)
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                },
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(err => console.error('Error loading bandwidth chart:', err));
+    };
+
+    // Load chart on page load
+    loadBandwidthChart(24);
+
+    // Refresh chart every 5 minutes
+    setInterval(() => loadBandwidthChart(currentHours), 300000);
 
     // Pagination Logic (Compatible with Tailwind)
     document.addEventListener('DOMContentLoaded', () => {
