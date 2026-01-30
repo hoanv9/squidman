@@ -107,6 +107,24 @@
       "bandwidth_in": 0.23,
       "bandwidth_out": 0.0,
       "total": 0.24
+    },
+    {
+      "timestamp": "2026-01-30T14:06:19.477153",
+      "bandwidth_in": 0.13,
+      "bandwidth_out": 0.0,
+      "total": 0.13
+    },
+    {
+      "timestamp": "2026-01-30T14:11:19.476390",
+      "bandwidth_in": 0.12,
+      "bandwidth_out": 0.0,
+      "total": 0.12
+    },
+    {
+      "timestamp": "2026-01-30T14:16:19.470762",
+      "bandwidth_in": 0.21,
+      "bandwidth_out": 0.01,
+      "total": 0.22
     }
   ]
 }

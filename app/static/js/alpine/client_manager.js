@@ -26,6 +26,25 @@ document.addEventListener('alpine:init', () => {
         // Templates Data
         urlGroups: {},
         selectedTemplates: [],
+        templateSearch: '',
+        get filteredUrlGroups() {
+            const search = this.templateSearch.toLowerCase().trim();
+            if (!search) return this.urlGroups;
+
+            const filtered = {};
+            Object.entries(this.urlGroups).forEach(([group, urls]) => {
+                // Check if group name matches
+                const groupMatches = group.toLowerCase().includes(search);
+
+                // Check if any URL in the group matches
+                const urlMatches = urls.some(url => url.toLowerCase().includes(search));
+
+                if (groupMatches || urlMatches) {
+                    filtered[group] = urls;
+                }
+            });
+            return filtered;
+        },
         get mergedPreview() {
             let domains = [];
             this.selectedTemplates.forEach(group => {
@@ -197,6 +216,7 @@ document.addEventListener('alpine:init', () => {
 
         openTemplateModal() {
             this.selectedTemplates = [];
+            this.templateSearch = '';
             this.isTemplateModalOpen = true;
         },
 

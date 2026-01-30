@@ -295,10 +295,17 @@
     <div class="flex flex-col md:flex-row gap-4 h-[55vh]">
         <!-- Left: Selection List -->
         <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar border-r border-slate-100">
+            <!-- Search Box -->
+            <div class="mb-3">
+                <input type="text" x-model="templateSearch" placeholder="Search by group name or URL..."
+                    class="form-input text-sm py-1.5 px-3 focus:ring-brand-100 focus:border-brand-500 w-full"
+                    autocomplete="off">
+            </div>
+
             <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Available Groups
             </h4>
             <div class="space-y-1">
-                <template x-for="(urls, group) in urlGroups" :key="group">
+                <template x-for="(urls, group) in filteredUrlGroups" :key="group">
                     <label class="flex items-center p-1.5 px-3 rounded-md cursor-pointer border transition-all group"
                         :class="selectedTemplates.includes(group) ? 'bg-brand-50 border-brand-200 shadow-sm' : 'hover:bg-slate-50 border-slate-100'">
                         <div class="flex items-center h-4">
@@ -312,6 +319,13 @@
                             <span class="text-[9px] text-slate-400 ml-2" x-text="'(' + urls.length + ')'"></span>
                         </div>
                     </label>
+                </template>
+                <!-- No Results Message -->
+                <template x-if="Object.keys(filteredUrlGroups).length === 0 && templateSearch.trim() !== ''">
+                    <div class="text-center py-8 text-slate-400 italic text-sm">
+                        <i class="fas fa-search mb-2 text-2xl"></i>
+                        <p>No groups found matching "<span x-text="templateSearch"></span>"</p>
+                    </div>
                 </template>
             </div>
         </div>
