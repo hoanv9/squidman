@@ -133,17 +133,39 @@ class ConfigurationService:
             vip_dir = '/etc/squid/VIP' if os.name != 'nt' else 'config/squid/VIP' 
             os.makedirs(vip_dir, exist_ok=True)
 
+            # Track copied files
+            copied_files = {'vip': 0, 'conf': 0, 'domains': 0}
+            
             for filename in os.listdir(output_dir):
                 src = os.path.join(output_dir, filename)
                 if os.path.isfile(src):
                     if filename == 'VIP_clients.acl' or filename.startswith('Whitelist_'):
-                        shutil.copy(src, os.path.join(vip_dir, filename))
+                        dest = os.path.join(vip_dir, filename)
+                        shutil.copy(src, dest)
+                        copied_files['vip'] += 1
+                        logging.info(f"Copied {filename} to {dest}")
                     elif filename.endswith('_ip.conf'):
-                        shutil.copy(src, os.path.join(squid_conf, filename))
+                        dest = os.path.join(squid_conf, filename)
+                        shutil.copy(src, dest)
+                        copied_files['conf'] += 1
+                        logging.info(f"Copied {filename} to {dest}")
                     elif filename.endswith('_url.conf'):
-                        shutil.copy(src, os.path.join(squid_domains, filename))
+                        dest = os.path.join(squid_domains, filename)
+                        shutil.copy(src, dest)
+                        copied_files['domains'] += 1
+                        logging.info(f"Copied {filename} to {dest}")
             
-            return True, "Configuration applied."
+            msg = (
+                f"Configuration applied successfully!<br>"
+                f"• VIP files: {copied_files['vip']}<br>"
+                f"• Config files: {copied_files['conf']}<br>"
+                f"• Domain files: {copied_files['domains']}<br>"
+                f"• Squid Conf Dir: {squid_conf}<br>"
+                f"• Squid Domains Dir: {squid_domains}<br>"
+                f"• VIP Dir: {vip_dir}"
+            )
+            
+            return True, msg
         except Exception as e:
             logging.error(f"Error applying config: {e}")
             return False, str(e)

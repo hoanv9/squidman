@@ -65,6 +65,48 @@
       "bandwidth_in": 0.17,
       "bandwidth_out": 2.73,
       "total": 2.9
+    },
+    {
+      "timestamp": "2026-01-30T13:34:49.907307",
+      "bandwidth_in": 0.08,
+      "bandwidth_out": 0.0,
+      "total": 0.08
+    },
+    {
+      "timestamp": "2026-01-30T13:39:49.902032",
+      "bandwidth_in": 0.14,
+      "bandwidth_out": 0.0,
+      "total": 0.14
+    },
+    {
+      "timestamp": "2026-01-30T13:44:49.901358",
+      "bandwidth_in": 0.11,
+      "bandwidth_out": 0.0,
+      "total": 0.12
+    },
+    {
+      "timestamp": "2026-01-30T13:49:49.912884",
+      "bandwidth_in": 0.05,
+      "bandwidth_out": 0.0,
+      "total": 0.05
+    },
+    {
+      "timestamp": "2026-01-30T13:54:49.906645",
+      "bandwidth_in": 0.17,
+      "bandwidth_out": 0.02,
+      "total": 0.19
+    },
+    {
+      "timestamp": "2026-01-30T13:59:49.908486",
+      "bandwidth_in": 0.14,
+      "bandwidth_out": 0.0,
+      "total": 0.14
+    },
+    {
+      "timestamp": "2026-01-30T14:01:19.475661",
+      "bandwidth_in": 0.23,
+      "bandwidth_out": 0.0,
+      "total": 0.24
     }
   ]
 }
