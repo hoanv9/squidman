@@ -155,17 +155,31 @@
                 <h3 class="text-lg font-bold text-slate-800">Database Backup & Restore</h3>
                 <p class="text-slate-500 text-sm mt-1">Manage database backups and restore points.</p>
             </div>
-            <form method="POST" action="{{ url_for('apply_configuration.create_manual_backup') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn-primary">
-                    <i class="fas fa-save mr-2"></i> Create Manual Backup
-                </button>
-            </form>
+            <div class="flex items-center gap-3">
+                <form method="POST" action="{{ url_for('apply_configuration.create_manual_backup') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save mr-2"></i> Create Manual Backup
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- Backup Files Table -->
         <!-- Backup Files Table Wrapper -->
         <div x-data="backupManager()">
+            <!-- Rows Selector -->
+            <div class="flex justify-end items-center mb-4">
+                <span class="text-sm text-slate-500 mr-2">Rows:</span>
+                <select x-model="limit" @change="updatePagination"
+                    class="form-select w-20 focus:ring-brand-100 focus:border-brand-500">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+
             <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto min-h-[400px]">
                     <table class="min-w-full divide-y divide-slate-200">
@@ -179,7 +193,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
-                            <template x-for="backup in backups" :key="backup.filename">
+                            <template x-for="backup in paginatedBackups" :key="backup.filename">
                                 <tr class="hover:bg-slate-50 transition-colors">
                                     <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-slate-700"
                                         x-text="backup.filename"></td>
@@ -211,6 +225,48 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="bg-slate-50 px-4 py-3 border-t border-slate-200 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <button @click="prevPage" :disabled="page === 1"
+                                class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Previous
+                            </button>
+                            <button @click="nextPage" :disabled="page === totalPages"
+                                class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-slate-700">
+                                    Showing <span class="font-medium" x-text="start"></span> to <span
+                                        class="font-medium" x-text="end"></span> of
+                                    <span class="font-medium" x-text="backups.length"></span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                                    aria-label="Pagination">
+                                    <button @click="prevPage" :disabled="page === 1"
+                                        class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <span
+                                        class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">
+                                        Page <span x-text="page"></span> of <span x-text="totalPages || 1"></span>
+                                    </span>
+                                    <button @click="nextPage" :disabled="page === totalPages"
+                                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -272,6 +328,41 @@
             selectedBackup: '',
             isRestoreModalOpen: false,
             isDeleteModalOpen: false,
+
+            // Pagination
+            limit: 10,
+            page: 1,
+
+            get paginatedBackups() {
+                const start = (this.page - 1) * this.limit;
+                const end = start + parseInt(this.limit);
+                return this.backups.slice(start, end);
+            },
+
+            get totalPages() {
+                return Math.ceil(this.backups.length / this.limit);
+            },
+
+            get start() {
+                return (this.page - 1) * this.limit + 1;
+            },
+
+            get end() {
+                const calculated = this.page * this.limit;
+                return calculated > this.backups.length ? this.backups.length : calculated;
+            },
+
+            nextPage() {
+                if (this.page < this.totalPages) this.page++;
+            },
+
+            prevPage() {
+                if (this.page > 1) this.page--;
+            },
+
+            updatePagination() {
+                if (this.page > this.totalPages) this.page = this.totalPages || 1;
+            },
 
             init() {
                 console.log('Backup Manager Initialized');
