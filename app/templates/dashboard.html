@@ -57,39 +57,39 @@
         </div>
 
         <!-- Server Status -->
-        <div class="bg-white rounded-lg shadow-sm p-6 border border-slate-100">
-            <h3 class="text-lg font-semibold text-slate-700 mb-4 border-b pb-2">Server Status</h3>
-            <div class="space-y-3">
+        <div class="bg-white rounded-lg shadow-sm p-4 border border-slate-100">
+            <h3 class="text-base font-semibold text-slate-700 mb-3">Server Status</h3>
+            <div class="space-y-2">
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-500">Squid Service</span>
+                    <span class="text-sm text-slate-500">Squid Service</span>
                     <span
-                        class="px-2 py-1 rounded-full text-xs font-semibold {{ 'bg-green-100 text-green-800' if squid_status == 'Running' else 'bg-red-100 text-red-800' }}">
+                        class="px-2 py-0.5 rounded-full text-xs font-semibold {{ 'bg-green-100 text-green-800' if squid_status == 'Running' else 'bg-red-100 text-red-800' }}">
                         {{ squid_status }}
                     </span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-500">Proxy Port</span>
-                    <span class="font-mono font-bold text-slate-800">{{ squid_port }}</span>
+                    <span class="text-sm text-slate-500">Proxy Port</span>
+                    <span class="text-sm font-mono font-bold text-slate-800">{{ squid_port }}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-500">Uptime</span>
-                    <span class="font-medium text-slate-800">{{ server_uptime }}</span>
+                    <span class="text-sm text-slate-500">Uptime</span>
+                    <span class="text-sm font-medium text-slate-800">{{ server_uptime }}</span>
                 </div>
                 {% if squid_status == "Running" and squid_started_time %}
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-500">Started</span>
-                    <span class="text-slate-700">{{ squid_started_time }}</span>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-slate-500">Started</span>
+                    <span class="text-xs text-slate-700">{{ squid_started_time }}</span>
                 </div>
                 {% endif %}
                 {% if squid_reload_time %}
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-slate-500">Reloaded</span>
-                    <span class="text-slate-700">{{ squid_reload_time }}</span>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-slate-500">Reloaded</span>
+                    <span class="text-xs text-slate-700">{{ squid_reload_time }}</span>
                 </div>
                 {% endif %}
-                <div class="pt-4 mt-2 border-t flex justify-between items-center">
-                    <span class="text-slate-500">Bandwidth</span>
-                    <span class="font-bold text-brand-600" id="bandwidth">0 Mbps</span>
+                <div class="pt-2 mt-2 border-t flex justify-between items-center">
+                    <span class="text-sm text-slate-500">Bandwidth</span>
+                    <span class="text-sm font-bold text-brand-600" id="bandwidth">0 Mbps</span>
                 </div>
             </div>
         </div>
