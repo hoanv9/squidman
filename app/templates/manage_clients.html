@@ -182,14 +182,20 @@
                 <div class="w-full relative">
                     <label class="form-label">IP Address / CIDR <span class="text-red-500">*</span></label>
                     <input type="text" name="ip_address" x-model="formData.ip" :readonly="modalMode === 'edit'" required
-                        placeholder="192.168.1.10" class="form-input mt-1 focus:ring-brand-100"
+                        @blur="autoLookupHostname" placeholder="192.168.1.10"
+                        class="form-input mt-1 focus:ring-brand-100"
                         :class="{'bg-slate-50 text-slate-500 cursor-not-allowed': modalMode === 'edit'}"
                         autocomplete="off">
                 </div>
 
                 <!-- DNS Hostname -->
-                <div class="w-full">
-                    <label class="form-label">DNS Hostname</label>
+                <div class="w-full relative">
+                    <label class="form-label flex items-center justify-between">
+                        <span>DNS Hostname</span>
+                        <span x-show="parsingDNS" class="text-xs text-brand-600 italic">
+                            <i class="fas fa-spinner fa-spin mr-1"></i>Looking up...
+                        </span>
+                    </label>
                     <input type="text" name="dns_hostname" x-model="formData.dns" placeholder="host.example.com"
                         class="form-input mt-1 focus:ring-brand-100" autocomplete="off">
                 </div>

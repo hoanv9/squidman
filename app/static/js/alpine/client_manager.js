@@ -193,6 +193,13 @@ document.addEventListener('alpine:init', () => {
 
         // --- Helpers ---
 
+        async autoLookupHostname() {
+            // Only auto-lookup if hostname is empty and IP is provided
+            if (!this.formData.dns || this.formData.dns.trim() === '') {
+                await this.performNsLookup();
+            }
+        },
+
         async performNsLookup() {
             if (!this.formData.ip) return;
             this.parsingDNS = true;
