@@ -50,4 +50,4 @@ if __name__ == '__main__':
 
     # Chạy ứng dụng Flask với HTTPS
     #app.run(host='0.0.0.0', port=5000, debug=False)
-    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context=(cert_file, key_file))
+    app.run(host='0.0.0.0', port=5001, debug=True, ssl_context=(cert_file, key_file))
